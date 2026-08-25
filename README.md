@@ -70,6 +70,12 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
+> **Замечание про `pip`:** на Debian/Ubuntu без пакета `python3-venv` виртуальное
+> окружение создаётся без `pip` — `.venv/bin/pip` не существует, и строка
+> `.venv/bin/pip install -r requirements.txt` падает с «No such file or directory».
+> Установите `python3-venv` (`sudo apt install python3-venv`) или используйте `uv`:
+> `uv venv --python 3.11 .venv && uv pip install --python .venv/bin/python -r requirements.txt`
+
 ## 3. Заполнить `.env`
 
 ```bash
@@ -93,6 +99,14 @@ cp .env.example .env
 Остальные переменные (`ROUTER_*`, `MCP_*`, `LLM_STRUCTURED_MODE`,
 `BROADCAST_STEPS`, ...) можно оставить как в `.env.example` — это запасной
 путь и тонкая настройка, для базового прогона не нужны.
+
+> **Внимание, inline-комментарии в `.env`:** не пишите `KEY=   # комментарий` в одной
+> строке для ключей, значение которых должно быть пустым (например
+> `TELEGRAM_ALLOWED_GROUP_CHAT_IDS`, `TELEGRAM_REPORT_CHAT_ID`). `python-dotenv` срезает
+> комментарий только если перед `#` есть непустое значение; при пустом значении комментарий
+> сам становится значением, и `--init`/`--telegram`/CLI падают с
+> `ValueError: invalid literal for int()` (или получают мусорную строку). Комментарий для
+> пустых ключей держите на отдельной `#`-строке — как в исправленном `.env.example`.
 
 ### Получение токена у @BotFather
 
@@ -291,6 +305,14 @@ with db() as conn:
 а не как явная ошибка блокировки. Прогоняйте `pytest` последовательно и на
 базе, которую в этот момент больше никто не трогает — для экспериментов
 отдельно от `budget` держите отдельную базу (например, `budget_test`).
+
+> **Подготовка тестовой базы перед первым `pytest`:** тесты наполняют базу только сидом
+> (`load_seed`), а RAG-корпуса (`knowledge.md`, `household.md`) попадают в таблицу
+> `documents` только через `--init`/`load_documents`. На пустой тестовой базе
+> `test_search_knowledge_returns_only_pf` и `test_search_household_returns_only_hh`
+> падают с `assert ([])` — это не баг, а отсутствие документов. Перед прогоном выполните
+> на тестовой базе `--init` и направьте тесты на неё через `PG_DSN`:
+> `PG_DSN=<тестовая-база> .venv/bin/python budget_agent.py --init && PG_DSN=<тестовая-база> .venv/bin/python -m pytest test_budget_agent.py`.
 
 ## Лестница моделей закрытого контура
 
