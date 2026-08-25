@@ -55,6 +55,14 @@ docker compose up -d
 (`docker compose down -v && docker compose up -d`, если поднимали контейнером
 раньше).
 
+**После обновления с версии без `dialog_state.user_id` базу нужно пересоздать.**
+В текущей схеме состояние диалога разделено по `(chat_id, user_id)`, а для
+`transactions.amount` добавлено ограничение положительной суммы. Проект не
+выполняет миграции существующей схемы, поэтому старый volume нужно удалить
+командой `docker compose down -v`, снова поднять Postgres и повторить `--init`
+(индексация займёт около восьми минут). `--doctor` определяет старую схему и
+сообщает об этом до запуска бота.
+
 ## 2. Установить зависимости
 
 ```bash
@@ -79,6 +87,8 @@ cp .env.example .env
 - `TELEGRAM_BOT_TOKEN` — только для Telegram-слоя, см. следующий пункт
 - `PERSON_HUSBAND_TG_ID`, `PERSON_WIFE_TG_ID` — числовые Telegram id мужа и
   жены (бот резолвит роль по этому id, а не по имени)
+- `TELEGRAM_ALLOWED_GROUP_CHAT_IDS` — разрешённые групповые `chat_id` через
+  запятую. Пустое значение запрещает работу бота во всех группах.
 
 Остальные переменные (`ROUTER_*`, `MCP_*`, `LLM_STRUCTURED_MODE`,
 `BROADCAST_STEPS`, ...) можно оставить как в `.env.example` — это запасной
@@ -93,6 +103,13 @@ cp .env.example .env
    вставьте его в `TELEGRAM_BOT_TOKEN`.
 4. Чтобы узнать свой Telegram id для `PERSON_HUSBAND_TG_ID`/`PERSON_WIFE_TG_ID`,
    напишите что угодно боту `@userinfobot` — он ответит числовым id.
+
+Чтобы получить `chat_id` группы для `TELEGRAM_ALLOWED_GROUP_CHAT_IDS`, добавьте
+бота в группу, временно остановите polling, отправьте в группу сообщение и
+откройте `https://api.telegram.org/bot<TOKEN>/getUpdates`: нужное значение
+находится в `result[].message.chat.id`. Идентификатор группы отрицательный,
+у супергруппы обычно начинается с `-100`. После записи значения в `.env`
+снова запустите бота.
 
 ## 4. Проверить окружение (`--doctor`)
 

@@ -2,6 +2,7 @@
 import datetime as _dt
 import json
 import logging
+import math
 import os
 import re
 import select
@@ -18,7 +19,7 @@ import psycopg
 from dotenv import load_dotenv
 from openai import OpenAI
 from pgvector.psycopg import register_vector
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, ValidationError, model_validator
 
 load_dotenv()
 
@@ -41,6 +42,7 @@ class Settings:
     telegram_proxy: str | None
     husband_tg_id: int | None
     wife_tg_id: int | None
+    allowed_group_chat_ids: tuple[int, ...]
     mcp_cbr_cmd: str
     mcp_init_timeout_seconds: float
     mcp_call_timeout_seconds: float
@@ -58,6 +60,9 @@ def load_settings() -> Settings:
         if not v:
             sys.exit(f"Ошибка: не задана {name}. Определите её в .env или в окружении.")
         return v
+    def _int_tuple(name):
+        raw = os.getenv(name, "").strip()
+        return tuple(int(v.strip()) for v in raw.split(",") if v.strip())
 
     provider = os.getenv("LLM_PROVIDER", "ollama").strip().lower()
     if provider == "ollama":
@@ -85,6 +90,7 @@ def load_settings() -> Settings:
         telegram_proxy=os.getenv("TELEGRAM_HTTP_PROXY") or os.getenv("HTTPS_PROXY"),
         husband_tg_id=_int("PERSON_HUSBAND_TG_ID"),
         wife_tg_id=_int("PERSON_WIFE_TG_ID"),
+        allowed_group_chat_ids=_int_tuple("TELEGRAM_ALLOWED_GROUP_CHAT_IDS"),
         mcp_cbr_cmd=_need("MCP_CBR_CMD"),
         # Первый запуск через uvx (скачивание/распаковка пакета) заметно дольше
         # обычного вызова — поэтому у инициализации свой, более щедрый таймаут.
@@ -262,6 +268,7 @@ class Ctx:
     person: str | None       # husband | wife | None
     chat_type: str           # private | group
     chat_id: int
+    user_id: int | None = None
 
 def resolve_person_id(conn, person: str | None) -> int | None:
     """Числовой id персоны по её роли ('husband'/'wife'). Не хранится в Ctx:
@@ -301,7 +308,7 @@ CREATE TABLE IF NOT EXISTS categories (
 
 CREATE TABLE IF NOT EXISTS transactions (
     id serial PRIMARY KEY, ts timestamptz NOT NULL DEFAULT now(),
-    amount numeric(14,2) NOT NULL,
+    amount numeric(14,2) NOT NULL CHECK (amount > 0),
     currency text NOT NULL CHECK (currency IN ('RUB','USD')),
     account_id int REFERENCES accounts(id),
     category_id int REFERENCES categories(id),
@@ -342,9 +349,11 @@ CREATE TABLE IF NOT EXISTS budget_limits (
     PRIMARY KEY (period, scope));
 
 CREATE TABLE IF NOT EXISTS dialog_state (
-    chat_id bigint PRIMARY KEY, person_id int REFERENCES persons(id),
+    chat_id bigint NOT NULL, user_id bigint NOT NULL DEFAULT 0,
+    person_id int REFERENCES persons(id),
     state text NOT NULL DEFAULT 'base', pending jsonb,
-    updated_at timestamptz NOT NULL DEFAULT now());
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (chat_id, user_id));
 
 CREATE TABLE IF NOT EXISTS documents (
     id serial PRIMARY KEY, document_key text UNIQUE NOT NULL,
@@ -747,6 +756,8 @@ def add_expense(ctx: Ctx, amount: float, merchant: str, *, category: str,
     категорией и областью — третья ступень каскада категоризации. Запись
     транзакции и дозапись алиаса — одна явная транзакция базы: сбой между
     ними не должен оставлять трату записанной без соответствующего обучения."""
+    if not math.isfinite(amount) or amount <= 0:
+        raise ValueError("сумма расхода должна быть конечным положительным числом")
     with db() as conn:
         cat_row = conn.execute(
             "SELECT id FROM categories WHERE name = %s", (category,)).fetchone()
@@ -772,6 +783,8 @@ def add_expense(ctx: Ctx, amount: float, merchant: str, *, category: str,
     return {"data": {"id": tx_id, "category": category, "amount": float(amount)},
             "source_keys": ["family_data"]}
 
+PositiveMoney = Annotated[FiniteFloat, Field(gt=0)]
+
 class _SpendingCheck(BaseModel):
     """Внутренняя схема для structured_call: в отличие от публичной
     ParsedSpending несёт ещё is_spending, чтобы модель могла сказать «это не
@@ -781,13 +794,19 @@ class _SpendingCheck(BaseModel):
     structured_call), а не молчаливая трата на 0 рублей без названия."""
     model_config = ConfigDict(extra="forbid")
     is_spending: bool
-    amount: float
+    amount: FiniteFloat
     merchant: str
     currency: Literal["RUB", "USD"]
 
+    @model_validator(mode="after")
+    def validate_spending_amount(self):
+        if self.is_spending and self.amount <= 0:
+            raise ValueError("сумма расхода должна быть положительной")
+        return self
+
 class ParsedSpending(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    amount: float
+    amount: PositiveMoney
     merchant: str
     currency: Literal["RUB", "USD"]
 
@@ -973,6 +992,7 @@ class MCPClient:
         self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE, text=True, bufsize=1)
         self._id = 0
+        self._io_lock = threading.Lock()
         self._call_timeout = call_timeout if call_timeout is not None else SETTINGS.mcp_call_timeout_seconds
         init_timeout = init_timeout if init_timeout is not None else SETTINGS.mcp_init_timeout_seconds
         try:
@@ -987,28 +1007,32 @@ class MCPClient:
             raise
 
     def _send(self, method, params=None, expect_reply=True, timeout=None):
-        req = {"jsonrpc": "2.0", "method": method}
-        if expect_reply:
-            self._id += 1
-            req["id"] = self._id
-        if params:
-            req["params"] = params
-        self.proc.stdin.write(json.dumps(req) + "\n")
-        self.proc.stdin.flush()
-        if not expect_reply:
-            return None
-        wait = timeout if timeout is not None else self._call_timeout
-        ready, _, _ = select.select([self.proc.stdout], [], [], wait)
-        if not ready:
-            raise TimeoutError(f"MCP-сервер не ответил за {wait:g} сек ({method})")
-        line = self.proc.stdout.readline()
-        if not line:
-            # Процесс завершился без ответа (упал при старте, конфликт версий
-            # в uvx-кеше и т.п.) — сообщаем через понятную ошибку, а не
-            # непонятный JSONDecodeError на пустой строке.
-            err = self.proc.stderr.read()
-            raise RuntimeError(f"MCP-сервер не ответил: {err.strip()[:500]}")
-        return json.loads(line)
+        with self._io_lock:
+            req = {"jsonrpc": "2.0", "method": method}
+            request_id = None
+            if expect_reply:
+                self._id += 1
+                request_id = self._id
+                req["id"] = request_id
+            if params:
+                req["params"] = params
+            self.proc.stdin.write(json.dumps(req) + "\n")
+            self.proc.stdin.flush()
+            if not expect_reply:
+                return None
+            wait = timeout if timeout is not None else self._call_timeout
+            ready, _, _ = select.select([self.proc.stdout], [], [], wait)
+            if not ready:
+                raise TimeoutError(f"MCP-сервер не ответил за {wait:g} сек ({method})")
+            line = self.proc.stdout.readline()
+            if not line:
+                err = self.proc.stderr.read()
+                raise RuntimeError(f"MCP-сервер не ответил: {err.strip()[:500]}")
+            response = json.loads(line)
+            if response.get("id") != request_id:
+                raise RuntimeError(
+                    f"MCP нарушил JSON-RPC: ожидался id={request_id}, получен {response.get('id')!r}")
+            return response
 
     def list_tools(self) -> list[dict]:
         return self._send("tools/list", {})["result"]["tools"]
@@ -1652,7 +1676,7 @@ def render_answer(ans: FinalAnswer, ctx: Ctx, question: str, registry: "set[str]
 
 STATE_TTL_SECONDS = 3600
 
-def get_state(chat_id: int) -> dict:
+def get_state(chat_id: int, user_id: int | None = None) -> dict:
     """Состояние диалога по chat_id. Протухает через STATE_TTL_SECONDS: если
     updated_at старше часа, считаем, что пользователь ушёл, не ответив на
     висящий вопрос, и возвращаем базовое состояние, а не забытый pending —
@@ -1661,22 +1685,25 @@ def get_state(chat_id: int) -> dict:
     with db() as conn:
         row = conn.execute(
             "SELECT state, pending, EXTRACT(EPOCH FROM (now() - updated_at)) "
-            "FROM dialog_state WHERE chat_id = %s", (chat_id,)).fetchone()
+            "FROM dialog_state WHERE chat_id = %s AND user_id = %s",
+            (chat_id, user_id or 0)).fetchone()
     if not row or row[2] > STATE_TTL_SECONDS:
         return {"state": "base", "pending": None}
     return {"state": row[0], "pending": row[1]}
 
-def set_state(chat_id: int, state: str, pending: dict | None = None, _age_seconds: int = 0) -> None:
+def set_state(chat_id: int, state: str, pending: dict | None = None,
+              _age_seconds: int = 0, user_id: int | None = None) -> None:
     """Записывает состояние диалога. _age_seconds сдвигает updated_at в
     прошлое — используется только тестами протухания, в обычной работе не
     передаётся (updated_at = now())."""
     with db() as conn:
         conn.execute(
-            """INSERT INTO dialog_state (chat_id, state, pending, updated_at)
-               VALUES (%s, %s, %s, now() - make_interval(secs => %s))
-               ON CONFLICT (chat_id) DO UPDATE SET state=EXCLUDED.state,
+            """INSERT INTO dialog_state (chat_id, user_id, state, pending, updated_at)
+               VALUES (%s, %s, %s, %s, now() - make_interval(secs => %s))
+               ON CONFLICT (chat_id, user_id) DO UPDATE SET state=EXCLUDED.state,
                  pending=EXCLUDED.pending, updated_at=EXCLUDED.updated_at""",
-            (chat_id, state, json.dumps(pending, ensure_ascii=False) if pending else None,
+            (chat_id, user_id or 0, state,
+             json.dumps(pending, ensure_ascii=False) if pending else None,
              _age_seconds))
 
 
@@ -1714,7 +1741,7 @@ def handle_command(cmd: str, ctx: Ctx, arg: str | None) -> "str | tuple[str, dic
     test_commands_do_not_call_llm подменяет structured_call функцией,
     роняющей тест, если это условие нарушено."""
     if cmd == "/start":
-        set_state(ctx.chat_id, "awaiting_limit")
+        set_state(ctx.chat_id, "awaiting_limit", user_id=ctx.user_id)
         return "Какой месячный лимит трат ставим? Ответьте числом в рублях."
     if cmd == "/status":
         return render_status(ctx)
@@ -1761,9 +1788,12 @@ def send_scheduled_report() -> None:
     if not chat_id:
         print("TELEGRAM_REPORT_CHAT_ID не задан, отчёт не отправлен:\n" + text)
         return
-    httpx.post(f"{TELEGRAM_API_BASE}/bot{SETTINGS.telegram_token}/sendMessage",
-               json={"chat_id": chat_id, "text": text},
-               proxy=SETTINGS.telegram_proxy, timeout=30)
+    response = httpx.post(f"{TELEGRAM_API_BASE}/bot{SETTINGS.telegram_token}/sendMessage",
+                          json={"chat_id": chat_id, "text": text},
+                          proxy=SETTINGS.telegram_proxy, timeout=30)
+    response.raise_for_status()
+    if not response.json().get("ok"):
+        raise RuntimeError("Telegram Bot API не подтвердил отправку отчёта")
 
 
 # ===== 10. TELEGRAM =====
@@ -1787,6 +1817,7 @@ _tg_logger = logging.getLogger("budget_agent.telegram")
 # через _tg_logger.exception (см. _on_text/_on_advice).
 _ON_TEXT_ERROR_MSG = "Не получилось обработать сообщение, попробуйте ещё раз."
 _ON_ADVICE_ERROR_MSG = "Не получилось подготовить совет, попробуйте ещё раз."
+_UNAUTHORIZED_MSG = "Этот бот доступен только настроенным пользователям и разрешённым чатам."
 
 def resolve_ctx(update) -> Ctx:
     """Ctx из объекта Update. Работает и с реальным telegram.Update
@@ -1818,7 +1849,16 @@ def resolve_ctx(update) -> Ctx:
         person = "husband"
     elif SETTINGS.wife_tg_id is not None and user.id == SETTINGS.wife_tg_id:
         person = "wife"
-    return Ctx(person=person, chat_type=msg.chat.type, chat_id=msg.chat_id)
+    return Ctx(person=person, chat_type=msg.chat.type, chat_id=msg.chat_id, user_id=user.id)
+
+
+def _is_authorized_ctx(ctx: Ctx) -> bool:
+    """Telegram закрыт по умолчанию: известный супруг и разрешённый чат."""
+    if ctx.person not in ("husband", "wife"):
+        return False
+    if ctx.chat_type == "private":
+        return True
+    return ctx.chat_id in SETTINGS.allowed_group_chat_ids
 
 
 def _try_complete_limit(text: str, ctx: Ctx) -> str | None:
@@ -1839,7 +1879,7 @@ def _try_complete_limit(text: str, ctx: Ctx) -> str | None:
                VALUES ('monthly', %s, 'RUB', 'common')
                ON CONFLICT (period, scope) DO UPDATE SET amount = EXCLUDED.amount""",
             (amount,))
-    set_state(ctx.chat_id, "base")
+    set_state(ctx.chat_id, "base", user_id=ctx.user_id)
     return f"Готово. Месячный лимит {amount:,.0f} ₽.".replace(",", " ")
 
 
@@ -1862,7 +1902,7 @@ def _try_complete_category(text: str, ctx: Ctx, pending: dict) -> str | None:
         return None
     r = add_expense(ctx, pending["amount"], pending["merchant"], category=match,
                      currency=pending.get("currency", "RUB"), scope="common", learn_alias=True)
-    set_state(ctx.chat_id, "base")
+    set_state(ctx.chat_id, "base", user_id=ctx.user_id)
     return (f"Записал: {match} — {r['data']['amount']:,.0f} ₽ "
             f"в «{pending['merchant']}».").replace(",", " ")
 
@@ -1878,7 +1918,8 @@ def _handle_spending(parsed: ParsedSpending, ctx: Ctx) -> str:
     guess = categorize(ctx, parsed.merchant)
     if guess["category"] is None:
         set_state(ctx.chat_id, "awaiting_category",
-                  {"amount": parsed.amount, "merchant": parsed.merchant, "currency": parsed.currency})
+                  {"amount": parsed.amount, "merchant": parsed.merchant, "currency": parsed.currency},
+                  user_id=ctx.user_id)
         options = ", ".join(guess["suggestions"])
         return f"Не разобрал категорию для «{parsed.merchant}». Какая категория? Варианты: {options}."
     r = add_expense(ctx, parsed.amount, parsed.merchant, category=guess["category"],
@@ -1941,20 +1982,20 @@ def route_message(text: str, ctx: Ctx, on_step=None) -> "str | tuple[str, dict]"
         cmd, _, arg = text.partition(" ")
         return handle_command(cmd, ctx, arg.strip() or None)
 
-    st = get_state(ctx.chat_id)
+    st = get_state(ctx.chat_id, ctx.user_id)
     notice = ""
     if st["state"] == "awaiting_limit":
         done = _try_complete_limit(text, ctx)
         if done is not None:
             return done
         notice = _reset_notice(st["state"], st["pending"])
-        set_state(ctx.chat_id, "base")
+        set_state(ctx.chat_id, "base", user_id=ctx.user_id)
     elif st["state"] == "awaiting_category":
         done = _try_complete_category(text, ctx, st["pending"])
         if done is not None:
             return done
         notice = _reset_notice(st["state"], st["pending"])
-        set_state(ctx.chat_id, "base")
+        set_state(ctx.chat_id, "base", user_id=ctx.user_id)
 
     parsed = parse_spending(text)
     if parsed:
@@ -2055,6 +2096,9 @@ async def _on_text(update, context) -> None:
     run_agent и у структурированного разбора: честное сообщение об ошибке,
     а не падение там, где ждут ответ."""
     ctx = resolve_ctx(update)
+    if not _is_authorized_ctx(ctx):
+        await _reply(context.bot, ctx.chat_id, _UNAUTHORIZED_MSG)
+        return
     text = update.message.text or ""
     try:
         result = await _run_with_broadcast(
@@ -2080,6 +2124,9 @@ async def _on_advice(update, context) -> None:
     непредвиденных исключений, что и в _on_text, и по той же причине."""
     await update.callback_query.answer()
     ctx = resolve_ctx(update)
+    if not _is_authorized_ctx(ctx):
+        await _reply(context.bot, ctx.chat_id, _UNAUTHORIZED_MSG)
+        return
     def call(on_step):
         ans, registry, any_empty_result = run_agent(ADVICE_QUESTION, ctx, on_step=on_step)
         return render_answer(ans, ctx, ADVICE_QUESTION, registry, any_empty_result)
@@ -2194,6 +2241,14 @@ def _doctor_check_db_empty(conn) -> tuple[str, str]:
         exists = conn.execute("SELECT to_regclass('public.transactions')").fetchone()[0]
         if exists is None:
             return DOCTOR_OK, "схема не создана, будет создана при --init"
+        state_user_id = conn.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='dialog_state' "
+            "AND column_name='user_id'").fetchone()
+        if state_user_id is None:
+            return DOCTOR_PROBLEM, (
+                "схема устарела: нет dialog_state.user_id — пересоздайте базу "
+                "(docker compose down -v, затем up -d и --init)")
         count = conn.execute("SELECT count(*) FROM transactions").fetchone()[0]
         if count == 0:
             return DOCTOR_OK, "схема создана, транзакций 0"

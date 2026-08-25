@@ -923,6 +923,20 @@ def test_mcp_call_timeout_does_not_hang(tmp_path):
     finally:
         client.close()
 
+def test_mcp_rejects_response_with_wrong_jsonrpc_id(tmp_path):
+    script = tmp_path / "fake_wrong_id_mcp_server.py"
+    script.write_text(
+        "import sys, json\n"
+        "for line in sys.stdin:\n"
+        "    req = json.loads(line)\n"
+        "    if 'id' in req:\n"
+        "        print(json.dumps({'jsonrpc': '2.0', 'id': req['id'] + 100, "
+        "'result': {'protocolVersion': '2024-11-05', 'capabilities': {}, "
+        "'serverInfo': {'name': 'fake', 'version': '0'}}}), flush=True)\n"
+    )
+    with pytest.raises(RuntimeError, match="JSON-RPC"):
+        MCPClient(command=f"{sys.executable} {script}", init_timeout=1)
+
 # ===== Задача 9: SGR-цикл =====
 
 from budget_agent import run_agent, FinalAnswer, NextStep, render_answer
@@ -1238,6 +1252,18 @@ def test_scheduled_report_without_token_does_not_crash(monkeypatch):
         **{**SETTINGS.__dict__, "telegram_token": None}))
     send_scheduled_report()   # должен просто напечатать отчёт в stdout
 
+def test_scheduled_report_propagates_telegram_http_error(monkeypatch):
+    monkeypatch.setattr("budget_agent.SETTINGS", SETTINGS.__class__(
+        **{**SETTINGS.__dict__, "telegram_token": "fake"}))
+    monkeypatch.setenv("TELEGRAM_REPORT_CHAT_ID", "123")
+    monkeypatch.setattr("budget_agent.daily_report", lambda ctx: "report")
+    class FailedResponse:
+        def raise_for_status(self):
+            raise RuntimeError("telegram unavailable")
+    monkeypatch.setattr("budget_agent.httpx.post", lambda *a, **k: FailedResponse())
+    with pytest.raises(RuntimeError, match="telegram unavailable"):
+        send_scheduled_report()
+
 
 # ===== Задача 11: Telegram-слой и маршрутизация =====
 #
@@ -1251,7 +1277,8 @@ import logging
 from budget_agent import (route_message, resolve_ctx, run_agent, FinalAnswer,
                           _try_complete_limit, _try_complete_category, _handle_spending,
                           _on_text, _on_advice, run_telegram, ParsedSpending,
-                          _ON_TEXT_ERROR_MSG, _ON_ADVICE_ERROR_MSG)
+                          _ON_TEXT_ERROR_MSG, _ON_ADVICE_ERROR_MSG,
+                          _is_authorized_ctx, _UNAUTHORIZED_MSG)
 
 def _settings_with_persons(**overrides):
     base = {"husband_tg_id": 555, "wife_tg_id": 666}
@@ -1594,6 +1621,13 @@ def test_resolve_ctx_unknown_user_has_no_person(monkeypatch):
     ctx = resolve_ctx(_FakeUpdate("привет", user_id=999))
     assert ctx.person is None
 
+def test_authorization_rejects_unknown_user_and_unlisted_group(monkeypatch):
+    monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(
+        allowed_group_chat_ids=(-1001,)))
+    assert not _is_authorized_ctx(Ctx(None, "private", 1, user_id=999))
+    assert not _is_authorized_ctx(Ctx("husband", "group", -2002, user_id=555))
+    assert _is_authorized_ctx(Ctx("husband", "group", -1001, user_id=555))
+
 def test_resolve_ctx_does_not_normalize_chat_type(monkeypatch):
     # Тип чата передаётся как есть — защита от приведения списком значений
     # лежит в visible_scopes(), а не здесь (см. брифовое требование раздела).
@@ -1626,6 +1660,19 @@ def test_on_text_sends_command_result(monkeypatch):
     asyncio.run(_on_text(update, context))
     assert len(context.bot.sent) == 1
     assert "из" in context.bot.sent[0]["text"]
+
+def test_on_text_rejects_unknown_user_before_routing(monkeypatch):
+    monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(broadcast_steps=False))
+    monkeypatch.setattr("budget_agent.route_message",
+                        lambda *a, **k: pytest.fail("unauthorized request reached routing"))
+    update, context = _FakeUpdate("сколько денег", user_id=999), _FakeContext()
+    asyncio.run(_on_text(update, context))
+    assert context.bot.sent[0]["text"] == _UNAUTHORIZED_MSG
+
+@pytest.mark.parametrize("amount", [0, -1, float("nan"), float("inf")])
+def test_parsed_spending_rejects_non_positive_or_non_finite_amount(amount):
+    with pytest.raises(Exception):
+        ParsedSpending(amount=amount, merchant="x", currency="RUB")
 
 def test_on_text_report_attaches_keyboard(monkeypatch):
     monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(broadcast_steps=False))
@@ -1987,6 +2034,21 @@ def test_doctor_llm_check_reports_429_as_quota_exhausted(monkeypatch):
     status, detail = budget_agent._doctor_check_llm(skip=False)
     assert status == budget_agent.DOCTOR_PROBLEM
     assert "429" in detail and "квота" in detail
+
+def test_doctor_reports_outdated_dialog_state_schema():
+    class Result:
+        def __init__(self, row): self.row = row
+        def fetchone(self): return self.row
+    class OldSchemaConnection:
+        def execute(self, query, params=None):
+            if "to_regclass" in query:
+                return Result(("transactions",))
+            if "information_schema.columns" in query:
+                return Result(None)
+            pytest.fail(f"unexpected query: {query}")
+    status, detail = budget_agent._doctor_check_db_empty(OldSchemaConnection())
+    assert status == budget_agent.DOCTOR_PROBLEM
+    assert "dialog_state.user_id" in detail and "пересоздайте" in detail
 
 def test_doctor_return_code_zero_when_all_ok(monkeypatch):
     ok = (budget_agent.DOCTOR_OK, "ок")
