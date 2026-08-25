@@ -79,6 +79,8 @@ cp .env.example .env
 - `TELEGRAM_BOT_TOKEN` — только для Telegram-слоя, см. следующий пункт
 - `PERSON_HUSBAND_TG_ID`, `PERSON_WIFE_TG_ID` — числовые Telegram id мужа и
   жены (бот резолвит роль по этому id, а не по имени)
+- `TELEGRAM_ALLOWED_GROUP_CHAT_IDS` — разрешённые групповые `chat_id` через
+  запятую. Пустое значение запрещает работу бота во всех группах.
 
 Остальные переменные (`ROUTER_*`, `MCP_*`, `LLM_STRUCTURED_MODE`,
 `BROADCAST_STEPS`, ...) можно оставить как в `.env.example` — это запасной
