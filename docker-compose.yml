@@ -1,0 +1,11 @@
+services:
+  db:
+    image: pgvector/pgvector:0.8.6-pg18-trixie
+    environment:
+      POSTGRES_USER: budget
+      POSTGRES_PASSWORD: budget
+      POSTGRES_DB: budget
+    ports: ["127.0.0.1:5433:5432"]
+    volumes: ["budget_pgdata:/var/lib/postgresql/data"]
+volumes:
+  budget_pgdata:
