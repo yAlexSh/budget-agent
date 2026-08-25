@@ -2241,6 +2241,14 @@ def _doctor_check_db_empty(conn) -> tuple[str, str]:
         exists = conn.execute("SELECT to_regclass('public.transactions')").fetchone()[0]
         if exists is None:
             return DOCTOR_OK, "схема не создана, будет создана при --init"
+        state_user_id = conn.execute(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='dialog_state' "
+            "AND column_name='user_id'").fetchone()
+        if state_user_id is None:
+            return DOCTOR_PROBLEM, (
+                "схема устарела: нет dialog_state.user_id — пересоздайте базу "
+                "(docker compose down -v, затем up -d и --init)")
         count = conn.execute("SELECT count(*) FROM transactions").fetchone()[0]
         if count == 0:
             return DOCTOR_OK, "схема создана, транзакций 0"

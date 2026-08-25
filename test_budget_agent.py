@@ -2035,6 +2035,21 @@ def test_doctor_llm_check_reports_429_as_quota_exhausted(monkeypatch):
     assert status == budget_agent.DOCTOR_PROBLEM
     assert "429" in detail and "квота" in detail
 
+def test_doctor_reports_outdated_dialog_state_schema():
+    class Result:
+        def __init__(self, row): self.row = row
+        def fetchone(self): return self.row
+    class OldSchemaConnection:
+        def execute(self, query, params=None):
+            if "to_regclass" in query:
+                return Result(("transactions",))
+            if "information_schema.columns" in query:
+                return Result(None)
+            pytest.fail(f"unexpected query: {query}")
+    status, detail = budget_agent._doctor_check_db_empty(OldSchemaConnection())
+    assert status == budget_agent.DOCTOR_PROBLEM
+    assert "dialog_state.user_id" in detail and "пересоздайте" in detail
+
 def test_doctor_return_code_zero_when_all_ok(monkeypatch):
     ok = (budget_agent.DOCTOR_OK, "ок")
     monkeypatch.setattr("budget_agent._doctor_check_python", lambda: ok)
