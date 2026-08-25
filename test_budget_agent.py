@@ -1772,6 +1772,183 @@ def test_run_telegram_without_token_returns_cleanly(monkeypatch, capsys):
     assert "TELEGRAM_BOT_TOKEN" in capsys.readouterr().out
 
 
+# ===== Правки по живой обратной связи (2026-08-25) =====
+#
+# 1. Разбор суммы лимита молча искажает значение: re.sub(r"[^\d]", "", text)
+#    выбрасывал единицы измерения вместе с пробелами — "250 тыс руб"
+#    разбиралось в 250, а не в 250000. _parse_amount ниже — детерминированный
+#    разбор с учётом единиц (тыс/к/k → ×1000, млн/м → ×1000000), без
+#    обращения к модели, тестируется здесь напрямую как чистая функция.
+# 2. Агент не мог менять лимит — только рассуждать. Добавлен инструмент
+#    set_budget_limit (по образцу остальных инструментов раздела 5),
+#    зарегистрированный в TOOL_REGISTRY/ToolCall и доступный из SGR-цикла.
+# 3. Команды бота не регистрировались в меню Telegram — добавлен
+#    _post_init (Application.builder().post_init(...)), вызывающий
+#    Bot.set_my_commands при старте.
+
+from budget_agent import _parse_amount, set_budget_limit, _post_init, BOT_COMMANDS, NextStep
+
+_CANONICAL_SEED_LIMIT = 140000
+
+def _restore_seed_limit():
+    with db() as conn:
+        conn.execute(
+            "INSERT INTO budget_limits (period, amount, currency, scope) "
+            "VALUES ('monthly', %s, 'RUB', 'common') "
+            "ON CONFLICT (period, scope) DO UPDATE SET amount = EXCLUDED.amount",
+            (_CANONICAL_SEED_LIMIT,))
+
+def _current_limit_row():
+    with db() as conn:
+        return conn.execute(
+            "SELECT amount FROM budget_limits WHERE period='monthly' AND scope='common'"
+        ).fetchone()
+
+
+# ---- 1a. _parse_amount как чистая функция: единицы измерения, разделители ----
+
+@pytest.mark.parametrize("text,expected", [
+    ("250 тыс руб", 250000),      # исходный баг из фидбэка
+    ("250к", 250000),
+    ("250k", 250000),
+    ("1,5 млн", 1500000),         # запятая как десятичный разделитель
+    ("1.5 млн", 1500000),         # точка как десятичный разделитель
+    ("250 000", 250000),          # пробел как разделитель разрядов — уже работало верно
+    ("140000 рублей", 140000),    # уже работало верно
+    ("300 тысяч", 300000),
+    ("2 миллиона", 2000000),
+    ("60000", 60000),
+])
+def test_parse_amount_handles_units_and_separators(text, expected):
+    assert _parse_amount(text) == expected
+
+@pytest.mark.parametrize("text", ["примерно столько же", "не знаю", "", "   ", "как обычно"])
+def test_parse_amount_returns_none_when_no_number(text):
+    assert _parse_amount(text) is None
+
+
+# ---- 1b. _try_complete_limit: не подставляет искажённое число, а переспрашивает ----
+
+def test_try_complete_limit_parses_thousand_unit_correctly():
+    # Регрессия ровно по фидбэку: "250 тыс руб" обязано стать лимитом
+    # 250000, а не 250.
+    ctx = Ctx("husband", "private", 901)
+    try:
+        out = _try_complete_limit("250 тыс руб", ctx)
+        assert out is not None and "250 000" in out
+        row = _current_limit_row()
+        assert row[0] == 250000
+    finally:
+        with db() as conn:
+            conn.execute("DELETE FROM dialog_state WHERE chat_id=901")
+        _restore_seed_limit()
+
+def test_try_complete_limit_rejects_amount_below_threshold_without_writing():
+    # "250" без единицы — валидное число, но меньше 1000 ₽: почти наверняка
+    # человека не поняли, поэтому записывать нельзя, только переспросить.
+    ctx = Ctx("husband", "private", 902)
+    before = _current_limit_row()
+    out = _try_complete_limit("250", ctx)
+    assert out is None
+    assert _current_limit_row() == before, "сумма ниже порога не должна попасть в базу"
+
+@pytest.mark.parametrize("text", ["примерно столько же", "не знаю"])
+def test_try_complete_limit_reasks_on_ambiguous_answer(text):
+    ctx = Ctx("husband", "private", 903)
+    before = _current_limit_row()
+    out = _try_complete_limit(text, ctx)
+    assert out is None
+    assert _current_limit_row() == before
+
+def test_route_message_limit_answer_with_unit_end_to_end():
+    # Тот же сценарий целиком через route_message (state → _try_complete_limit),
+    # как в реальном диалоге Telegram.
+    ctx = Ctx("husband", "private", 904)
+    set_state(904, "awaiting_limit")
+    try:
+        out = route_message("250 тыс руб", ctx)
+        assert "250 000" in out
+        assert get_state(904)["state"] == "base"
+        assert _current_limit_row()[0] == 250000
+    finally:
+        with db() as conn:
+            conn.execute("DELETE FROM dialog_state WHERE chat_id=904")
+        _restore_seed_limit()
+
+
+# ---- 2. Инструмент set_budget_limit ----
+
+def test_set_budget_limit_updates_and_returns_old_and_new():
+    try:
+        r = set_budget_limit(PRIV_H, 200000)
+        assert r["data"]["old_amount"] == _CANONICAL_SEED_LIMIT
+        assert r["data"]["new_amount"] == 200000
+        assert r["source_keys"] == ["family_data"]
+        assert _current_limit_row()[0] == 200000
+    finally:
+        _restore_seed_limit()
+
+def test_set_budget_limit_rejects_below_threshold_without_writing():
+    before = _current_limit_row()
+    r = set_budget_limit(PRIV_H, 250)
+    assert r["data"] is None
+    assert r.get("error")
+    assert _current_limit_row() == before, "инструмент не должен писать в базу при отказе"
+
+def test_set_budget_limit_is_registered_in_tool_registry():
+    from budget_agent import TOOL_REGISTRY
+    assert "set_budget_limit" in TOOL_REGISTRY
+    try:
+        r = TOOL_REGISTRY["set_budget_limit"](PRIV_H, {"amount": 210000})
+        assert r["data"]["new_amount"] == 210000
+    finally:
+        _restore_seed_limit()
+
+def test_agent_can_change_limit_via_tool(monkeypatch):
+    # Логика проверяется без единого живого вызова модели: structured_call
+    # подменён заранее заданным сценарием шагов (тот же приём, что и у
+    # test_agent_calls_tool_then_finalizes выше).
+    step = NextStep(goal_progress="начало", plan_remaining_steps=["изменить лимит"],
+                    decision_summary="меняю лимит по просьбе человека",
+                    call={"tool": "set_budget_limit", "amount": 220000}, task_completed=False)
+    done = NextStep(goal_progress="готово", plan_remaining_steps=["ответить"],
+                    decision_summary="лимит изменён", call={"tool": "none"}, task_completed=True)
+    final = FinalAnswer(summary="Лимит изменён: было 140 000 ₽, стало 220 000 ₽.",
+                        details=[], scenarios=[], source_keys=["family_data"])
+    monkeypatch.setattr("budget_agent.structured_call", _script([step, done, final]))
+    try:
+        ans, registry, any_empty_result = run_agent("измени лимит на 220 тысяч", PRIV_H)
+        assert "220 000" in ans.summary
+        assert _current_limit_row()[0] == 220000
+    finally:
+        _restore_seed_limit()
+
+
+# ---- 3. Регистрация команд Telegram в меню (set_my_commands) ----
+
+class _FakeBotForCommands:
+    def __init__(self):
+        self.set_commands_calls = []
+    async def set_my_commands(self, commands):
+        self.set_commands_calls.append(list(commands))
+
+class _FakeAppForPostInit:
+    def __init__(self):
+        self.bot = _FakeBotForCommands()
+
+def test_post_init_registers_all_four_commands():
+    app = _FakeAppForPostInit()
+    asyncio.run(_post_init(app))
+    assert len(app.bot.set_commands_calls) == 1, "set_my_commands должен вызываться ровно один раз"
+    commands = app.bot.set_commands_calls[0]
+    assert [c.command for c in commands] == ["start", "status", "report", "help"]
+    assert all(c.description for c in commands), "у каждой команды должно быть описание"
+
+def test_bot_commands_list_matches_registered_descriptions():
+    assert [cmd for cmd, _ in BOT_COMMANDS] == ["start", "status", "report", "help"]
+    assert all(descr for _, descr in BOT_COMMANDS)
+
+
 # ===== Финальная волна правок: пункты 5 и 6 (CLI) =====
 
 import sys

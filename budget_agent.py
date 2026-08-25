@@ -637,6 +637,50 @@ def get_budget_status(ctx: Ctx) -> dict:
                      "percent": percent, "days_left": days_left},
             "source_keys": ["family_data"]}
 
+# MIN_SENSIBLE_LIMIT (порог осмысленности лимита в рублях) определена в
+# разделе 9, рядом с _parse_amount/_try_complete_limit — там же, где решение
+# "меньше порога — переспросить, а не записать" впервые вводится по живой
+# обратной связи. set_budget_limit ниже отклоняет тем же порогом ровно по
+# той же причине: сумму не поняли, а не то, что семья реально живёт на
+# такие деньги в месяц.
+
+def set_budget_limit(ctx: Ctx, amount: float) -> dict:
+    """Меняет месячный лимит (period='monthly', scope='common') — тот же путь
+    записи, что и у _try_complete_limit при диалоговом вводе лимита; scope
+    жёстко 'common', а не по ctx.person, ровно как там (лимит один на семью,
+    его не видно смысла заводить отдельно на супруга).
+
+    Добавлен по обратной связи: агент раньше мог посчитать разумную величину
+    лимита, но не имел инструмента её записать — только рассуждал вслух и
+    ничего не менял. Возвращает old_amount/new_amount, чтобы агент мог явно
+    назвать пользователю, что именно изменилось, а не просто подтвердить
+    факт правки без цифр.
+
+    amount уже число рублей (модель обязана перевести словесную величину,
+    если человек её назвал текстом, — сюда приходит готовое число). Тем не
+    менее отклоняет то же самое, что и _try_complete_limit: значения меньше
+    MIN_SENSIBLE_LIMIT — тот же самый признак «сумму не поняли», что и в
+    диалоговом вводе, поэтому проверка использует ту же константу, а не
+    отдельный порог."""
+    if amount < MIN_SENSIBLE_LIMIT:
+        return {"data": None, "source_keys": [],
+                "error": (f"{amount:,.0f} ₽ — подозрительно маленький месячный лимит "
+                          f"(меньше {MIN_SENSIBLE_LIMIT:,.0f} ₽), похоже на ошибку в "
+                          "величине; не записано — переспроси у человека точную сумму, "
+                          "прежде чем вызывать инструмент снова").replace(",", " ")}
+    with db() as conn:
+        old_row = conn.execute(
+            "SELECT amount FROM budget_limits WHERE period = 'monthly' AND scope = 'common'"
+        ).fetchone()
+        old_amount = float(old_row[0]) if old_row else None
+        conn.execute(
+            """INSERT INTO budget_limits (period, amount, currency, scope)
+               VALUES ('monthly', %s, 'RUB', 'common')
+               ON CONFLICT (period, scope) DO UPDATE SET amount = EXCLUDED.amount""",
+            (amount,))
+    return {"data": {"old_amount": old_amount, "new_amount": float(amount)},
+            "source_keys": ["family_data"]}
+
 def forecast_cashflow(ctx: Ctx, months: int) -> dict:
     """Помесячная проекция рублёвого баланса: текущий баланс плюс средний
     доход минус средние расходы за последние три полных календарных месяца.
@@ -1170,6 +1214,15 @@ class ForecastCashflowCall(BaseModel):
     tool: Literal["forecast_cashflow"]
     months: int
 
+class SetBudgetLimitCall(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tool: Literal["set_budget_limit"]
+    # PositiveMoney (см. раздел 5, ParsedSpending) — finite и > 0 уже на
+    # уровне схемы; порог MIN_SENSIBLE_LIMIT (≥1000 ₽) проверяет сам
+    # set_budget_limit, а не схема — схема отсекает мусор вроде NaN/минуса,
+    # а не бизнес-правило "похоже на недопонятую сумму".
+    amount: PositiveMoney
+
 class SearchKnowledgeCall(BaseModel):
     model_config = ConfigDict(extra="forbid")
     tool: Literal["search_knowledge"]
@@ -1201,8 +1254,8 @@ class NoToolCall(BaseModel):
 
 ToolCall = Annotated[Union[GetBalanceCall, GetExpensesCall, GetRecurringCall, GetGoalsCall,
                            GetFamilyRuleCall, GetBudgetStatusCall, ForecastCashflowCall,
-                           SearchKnowledgeCall, SearchHouseholdCall, CbrGetRateCall,
-                           CbrInflationCall, CbrKeyRateCall, NoToolCall],
+                           SetBudgetLimitCall, SearchKnowledgeCall, SearchHouseholdCall,
+                           CbrGetRateCall, CbrInflationCall, CbrKeyRateCall, NoToolCall],
                      Field(discriminator="tool")]
 
 
@@ -1238,6 +1291,7 @@ TOOL_REGISTRY: dict[str, callable] = {
     "get_family_rule":   lambda ctx, a: get_family_rule(ctx, a["key"]),
     "get_budget_status": lambda ctx, a: get_budget_status(ctx),
     "forecast_cashflow": lambda ctx, a: forecast_cashflow(ctx, a["months"]),
+    "set_budget_limit":  lambda ctx, a: set_budget_limit(ctx, a["amount"]),
     "search_knowledge":  lambda ctx, a: _rag_result(search_knowledge(a["query"], ctx)),
     "search_household":  lambda ctx, a: _rag_result(search_household(a["query"], ctx)),
     "cbr_get_rate":      lambda ctx, a: cbr_get_rate(ctx, a["char_code"]),
@@ -1253,6 +1307,7 @@ _TOOL_HELP = """\
 - get_family_rule(key): семейное правило по ключу — large_purchase_threshold, emergency_fund_target, mandatory_monthly_expenses, vacation_indexation_pct, personal_money_share_pct, overspend_threshold
 - get_budget_status: лимит/потрачено/остаток за текущий календарный месяц, без аргументов
 - forecast_cashflow(months): помесячный прогноз рублёвого баланса на months месяцев вперёд
+- set_budget_limit(amount): изменить месячный лимит трат (₽, готовое число — «250 тыс» это 250000, переведи сам, не присылай текст с единицами); откажет и вернёт ошибку, если сумма меньше 1000 ₽ (похоже на недопонятую величину) — тогда переспроси точную сумму у человека, а не вызывай инструмент повторно с той же цифрой
 - search_knowledge(query): поиск по общим принципам финансовой грамотности (документы PF)
 - search_household(query): поиск по семейным договорённостям и истории (документы HH)
 - cbr_get_rate(char_code): курс ЦБ на сегодня, char_code — USD | EUR | CNY
@@ -1311,7 +1366,15 @@ _TOOL_HEURISTICS = """\
 скажи прямо и точно, что именно не видно ОТСЮДА (например: «в этом чате \
 данных по этой цели не видно — возможно, она заведена в личном чате»). \
 Честное признание «здесь не видно» — это полноценный, завершённый ответ, \
-а не провал."""
+а не провал.
+- Просьба изменить месячный лимит трат — это не вопрос-рассуждение, а \
+действие, и оно обязано закончиться вызовом set_budget_limit, а не только \
+советом: если человек назвал конкретную величину — вызови инструмент с ней \
+(переведи в рубли сам, если он назвал её словами вроде «250 тыс»); если \
+величину не назвал, но из семейных данных (обязательные расходы, доход, \
+текущий лимит) понятно, какая разумна — предложи конкретное число и \
+спроси подтверждения СЛЕДУЮЩИМ шагом, а не рассуждай об этом отвлечённо и \
+не завершай задачу без вызова инструмента, получив подтверждение."""
 
 
 def who_gen(person: str | None) -> str:
@@ -1888,18 +1951,80 @@ def _is_authorized_ctx(ctx: Ctx) -> bool:
     return ctx.chat_id in SETTINGS.allowed_group_chat_ids
 
 
-def _try_complete_limit(text: str, ctx: Ctx) -> str | None:
-    """Пытается завершить awaiting_limit. None, если text не похож на ответ
-    (ни одной цифры) — тогда route_message не удерживает вопрос про лимит
-    силой, а трактует сообщение как новое намерение (раздел «Состояние
-    диалога» design-doc: свободный вопрос в состоянии ожидания сбрасывает
-    pending, человек мог передумать отвечать и спросить другое). Разбор
-    суммы детерминированный, без обращения к модели — тот же принцип
-    "быстрого пути", что и у команд."""
-    digits = re.sub(r"[^\d]", "", text)
-    if not digits:
+# Порог осмысленности лимита (₽): и _try_complete_limit ниже, и инструмент
+# set_budget_limit (раздел 5) отклоняют значения меньше этого порога.
+# Причина находки в живой обратной связи: лимит в несколько сотен рублей
+# почти наверняка значит, что сумму не поняли (спутали рубли с тысячами
+# рублей), а не что семья реально живёт на такие деньги в месяц — дешевле
+# переспросить точную величину, чем молча записать то, что похоже на ошибку.
+MIN_SENSIBLE_LIMIT = 1000.0
+
+# Единицы, которыми по-русски называют сумму без выписывания всех нулей.
+# "к"/"k" — тысяча (по аналогии с английским "k" для thousand), "м" —
+# миллион; сюда же обычные словесные формы. Список закрытый и проверяется
+# только СЛЕДОМ за числом (см. _parse_amount) — случайное совпадение с
+# началом другого слова ("кг", "копеек") отсекается требованием границы
+# слова сразу после единицы, а не перечислением исключений.
+_AMOUNT_UNIT_THOUSAND = {"тыс", "тыс.", "тысяча", "тысячи", "тысяч", "к", "k"}
+_AMOUNT_UNIT_MILLION = {"млн", "млн.", "миллион", "миллиона", "миллионов", "м"}
+
+def _parse_amount(text: str) -> float | None:
+    """Разбирает сумму, названную по-русски свободным текстом, с учётом
+    единиц измерения — «250 тыс руб» и «250к» обязаны давать 250000, а не
+    250 (баг из живой обратной связи: re.sub(r"[^\\d]", "", text) выбрасывал
+    всё, кроме цифр, и терял единицу измерения молча).
+
+    Пробелы и неразрывные пробелы МЕЖДУ ЦИФРАМИ — это разделители разрядов
+    («250 000») и схлопываются перед разбором; пробел между числом и словом
+    («250 тыс») — это граница слова, участвует в поиске, но не в самом
+    числе. Запятая и точка равноправны как десятичный разделитель («1,5
+    млн»). Возвращает None, если в тексте не нашлось ни одной цифры вовсе,
+    ЛИБО цифры не образуют разбираемое число — оба случая вызывающий код
+    обязан трактовать как "разобрать не получилось", а не пытаться угадать
+    дальше (см. _try_complete_limit: без единой цифры это вообще не попытка
+    ответить числом, а другое сообщение)."""
+    t = text.strip().lower()
+    if not t:
         return None
-    amount = float(digits)
+    # Схлопнуть пробелы-разделители разрядов: пробел (или неразрывный
+    # пробел) считается частью самого числа только когда с обеих сторон от
+    # него цифры — иначе "250 тыс" потерял бы границу перед единицей.
+    t = re.sub(r"(?<=\d)\s+(?=\d)", "", t)
+    m = re.search(
+        r"(\d+(?:[.,]\d+)?)\s*"
+        r"(тысячи|тысяча|тысяч|тыс\.?|миллионов|миллиона|миллион|млн\.?|к|k|м)?\b",
+        t)
+    if not m:
+        return None
+    num_str, unit = m.group(1), m.group(2)
+    try:
+        value = float(num_str.replace(",", "."))
+    except ValueError:
+        return None
+    if unit in _AMOUNT_UNIT_THOUSAND:
+        value *= 1_000
+    elif unit in _AMOUNT_UNIT_MILLION:
+        value *= 1_000_000
+    return value
+
+
+def _try_complete_limit(text: str, ctx: Ctx) -> str | None:
+    """Пытается завершить awaiting_limit. None в двух случаях, которые
+    route_message трактует одинаково — сбрасывает pending, а не подставляет
+    произвольное число (раздел «Состояние диалога» design-doc: свободный
+    вопрос/непонятный ответ в состоянии ожидания не должен удерживать его
+    силой, человек мог передумать отвечать и спросить другое):
+      1. text не похож на попытку назвать сумму вовсе (_parse_amount вернул
+         None — ни одной цифры, либо цифры не складываются в число);
+      2. цифра нашлась, но результат меньше MIN_SENSIBLE_LIMIT — почти
+         наверняка сумму не поняли (спутали рубли с тысячами рублей, как в
+         живой обратной связи: «250 тыс руб» разобралось в 250 ₽), и молча
+         записывать её опаснее, чем переспросить.
+    Разбор суммы детерминированный, без обращения к модели — тот же принцип
+    "быстрого пути", что и у команд."""
+    amount = _parse_amount(text)
+    if amount is None or amount < MIN_SENSIBLE_LIMIT:
+        return None
     with db() as conn:
         conn.execute(
             """INSERT INTO budget_limits (period, amount, currency, scope)
@@ -2166,6 +2291,31 @@ async def _on_advice(update, context) -> None:
     await _reply(context.bot, ctx.chat_id, result)
 
 
+# Команды бота для меню Telegram (кнопка "/" в клиенте и автодополнение при
+# наборе) — добавлено по живой обратной связи: бот нигде не объявлял свои
+# команды, поэтому в интерфейсе не было ни меню, ни подсказок, команды
+# приходилось печатать вручную и знать наизусть. Пары (команда, описание),
+# а не telegram.BotCommand — тип импортируется лениво в _post_init, тем же
+# приёмом, что и весь остальной telegram/telegram.ext по файлу, чтобы
+# budget_agent.py оставался импортируемым (--doctor, тесты, CLI-вопрос) даже
+# там, где сама библиотека telegram сейчас не нужна.
+BOT_COMMANDS = [
+    ("start", "Начать и задать месячный лимит"),
+    ("status", "Сколько потрачено из лимита"),
+    ("report", "Расходы за месяц и совет от ИИ"),
+    ("help", "Список команд и что я умею"),
+]
+
+async def _post_init(app) -> None:
+    """Регистрирует команды бота через Bot.set_my_commands — без этого
+    клиент Telegram не показывает ни меню команд, ни подсказки при наборе
+    "/". Вызывается один раз при старте приложения: Application.builder()
+    .post_init(...) запускает эту функцию сразу после инициализации, до
+    начала поллинга (см. run_telegram)."""
+    from telegram import BotCommand
+    await app.bot.set_my_commands([BotCommand(cmd, descr) for cmd, descr in BOT_COMMANDS])
+
+
 def run_telegram() -> None:
     """Поллинг Telegram: CommandHandler на четыре команды (/start, /status,
     /report, /help), MessageHandler на свободный текст, CallbackQueryHandler
@@ -2183,7 +2333,8 @@ def run_telegram() -> None:
     updates_request = HTTPXRequest(proxy=SETTINGS.telegram_proxy, read_timeout=40,
                                    connect_timeout=20, write_timeout=20, pool_timeout=20)
     app = (Application.builder().token(SETTINGS.telegram_token)
-          .request(request).get_updates_request(updates_request).build())
+          .request(request).get_updates_request(updates_request)
+          .post_init(_post_init).build())
     for cmd in ("start", "status", "report", "help"):
         app.add_handler(CommandHandler(cmd, _on_text))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _on_text))
