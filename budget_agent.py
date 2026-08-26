@@ -2470,8 +2470,16 @@ def run_telegram() -> None:
     _STALE_NOTIFIED.clear()
 
     request = HTTPXRequest(proxy=SETTINGS.telegram_proxy)
-    updates_request = HTTPXRequest(proxy=SETTINGS.telegram_proxy, read_timeout=40,
-                                   connect_timeout=20, write_timeout=20, pool_timeout=20)
+    # Против DPI: длинный long-poll (read_timeout=40) держит одно TLS-соединение
+    # к api.telegram.org открытым ~40с — DPI успевает его идентифицировать и разорвать,
+    # бот «глохнет» и перестаёт отвечать до перезапуска (короткие getMe/sendMessage идут,
+    # а get_updates рвётся, что наблюдалось 2026-08-26). Укорачиваем окно поллинга, чтобы
+    # соединение жило меньше и пересоздавалось чаще, а connect_timeout — чтобы обрыв
+    # детектился и ретраился быстрее. run_polling сам ретраит сетевые сбои
+    # (network_retry_loop), но на свежем соединении, а не на «прокисшем». Это мера
+    # смягчения, не полное решение: сам фактор DPI в коде не устраним.
+    updates_request = HTTPXRequest(proxy=SETTINGS.telegram_proxy, read_timeout=20,
+                                   connect_timeout=10, write_timeout=20, pool_timeout=20)
     app = (Application.builder().token(SETTINGS.telegram_token)
           .request(request).get_updates_request(updates_request)
           .post_init(_post_init).build())
