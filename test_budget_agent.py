@@ -1008,6 +1008,17 @@ def test_cbr_disclaimer_survives_empty_model_sources(monkeypatch):
     text = render_answer(ans, PRIV_H, "какой сегодня курс доллара", registry, any_empty_result)
     assert "Курс приведён по данным ЦБ" in text
 
+
+@pytest.mark.parametrize("source_key", [
+    "cbr:key_rate@2026-08-26",
+    "cbr:inflation@2025-2026",
+])
+def test_cbr_non_currency_sources_do_not_get_exchange_rate_disclaimer(source_key):
+    """Ключевая ставка и инфляция — данные ЦБ, но не банковский курс обмена."""
+    from budget_agent import needs_disclaimer
+
+    assert needs_disclaimer("Какие сейчас данные ЦБ?", [source_key]) is None
+
 def test_cbr_disclaimer_survives_omitted_source(monkeypatch):
     """Модель называет один источник (family_data), но забывает cbr — список
     непустой, поэтому пункт 4 (подстановка реестра при пустом списке) тут не
@@ -1911,17 +1922,45 @@ def test_agent_can_change_limit_via_tool(monkeypatch):
     step = NextStep(goal_progress="начало", plan_remaining_steps=["изменить лимит"],
                     decision_summary="меняю лимит по просьбе человека",
                     call={"tool": "set_budget_limit", "amount": 220000}, task_completed=False)
-    done = NextStep(goal_progress="готово", plan_remaining_steps=["ответить"],
-                    decision_summary="лимит изменён", call={"tool": "none"}, task_completed=True)
     final = FinalAnswer(summary="Лимит изменён: было 140 000 ₽, стало 220 000 ₽.",
                         details=[], scenarios=[], source_keys=["family_data"])
-    monkeypatch.setattr("budget_agent.structured_call", _script([step, done, final]))
+    monkeypatch.setattr("budget_agent.structured_call", _script([step, final]))
     try:
         ans, registry, any_empty_result = run_agent("измени лимит на 220 тысяч", PRIV_H)
         assert "220 000" in ans.summary
         assert _current_limit_row()[0] == 220000
     finally:
         _restore_seed_limit()
+
+
+def test_agent_executes_successful_side_effect_tool_only_once(monkeypatch):
+    """Даже если модель повторяет тот же шаг, успешная запись завершается один раз."""
+    from budget_agent import TOOL_REGISTRY
+
+    step = NextStep(goal_progress="начало", plan_remaining_steps=["изменить лимит"],
+                    decision_summary="меняю лимит",
+                    call={"tool": "set_budget_limit", "amount": 220000},
+                    task_completed=False)
+    final = FinalAnswer(summary="Лимит изменён.", details=[], scenarios=[],
+                        source_keys=["family_data"])
+    calls = []
+
+    def fake_structured_call(schema, messages, **kwargs):
+        return final if schema is FinalAnswer else step
+
+    def fake_set_limit(ctx, args):
+        calls.append(args["amount"])
+        return {"data": {"old_amount": 140000, "new_amount": args["amount"]},
+                "source_keys": ["family_data"]}
+
+    monkeypatch.setattr("budget_agent.structured_call", fake_structured_call)
+    monkeypatch.setitem(TOOL_REGISTRY, "set_budget_limit", fake_set_limit)
+
+    answer, registry, any_empty_result = run_agent(
+        "измени лимит на 220 тысяч", PRIV_H, max_steps=8)
+
+    assert answer.summary == "Лимит изменён."
+    assert calls == [220000], "успешный side effect нельзя повторять"
 
 
 # ---- 3. Регистрация команд Telegram в меню (set_my_commands) ----
