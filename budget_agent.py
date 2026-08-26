@@ -2408,6 +2408,50 @@ async def _post_init(app) -> None:
     await app.bot.set_my_commands([BotCommand(cmd, descr) for cmd, descr in BOT_COMMANDS])
 
 
+# Момент запуска поллинга. Всё, что пришло раньше, — очередь простоя: Telegram
+# отдаёт её разом при старте процесса.
+_STARTED_AT: "_dt.datetime | None" = None
+# Чаты, уже получившие предупреждение в эту сессию: оно про перезапуск, а не
+# про конкретное сообщение, и повторять его на каждое письмо из очереди незачем.
+_STALE_NOTIFIED: set[int] = set()
+
+_STALE_NOTICE = ("Бот перезапускался, и это сообщение пришло, пока он лежал. "
+                 "Ничего по нему не сделано — отправьте заново.")
+
+
+async def _skip_stale(update, context) -> None:
+    """Первый обработчик (группа -1): устаревший ввод не исполняется, но и не
+    исчезает молча.
+
+    Почему не исполняется. Отменить сделанное бот не умеет: удалить записанную
+    транзакцию нельзя ни командой, ни инструментом. Разобранная спустя часы
+    «потратил 3200 в ВкусВилле» легла бы в базу вторым экземпляром — человек к
+    тому времени, не увидев подтверждения, обычно вводит трату заново. Так же
+    опасно воспроизведённое «да»: оно подтвердило бы смену лимита, от которой
+    человек уже отказался.
+
+    Почему с ответом. Предыдущая правка (PR #6) отбрасывала очередь целиком
+    через drop_pending_updates — безопасно, но молча: человек не узнавал, что
+    его сообщение не обработано. Теперь очередь доходит до бота, исполнение
+    останавливается здесь, а в чат уходит одно предупреждение.
+
+    Стражу видны только сообщения: у callback_query (кнопка «Совет от ИИ») своей
+    даты нет, а дата сообщения под кнопкой — это время отправки отчёта ботом, и
+    по ней живое нажатие выглядело бы устаревшим. Нажатие безопасно само по
+    себе: совет только читает данные."""
+    from telegram.ext import ApplicationHandlerStop
+
+    msg = getattr(update, "message", None)
+    date = getattr(msg, "date", None) if msg is not None else None
+    if _STARTED_AT is None or date is None or date >= _STARTED_AT:
+        return
+    ctx = resolve_ctx(update)
+    if _is_authorized_ctx(ctx) and ctx.chat_id not in _STALE_NOTIFIED:
+        _STALE_NOTIFIED.add(ctx.chat_id)
+        await _reply(context.bot, ctx.chat_id, _STALE_NOTICE)
+    raise ApplicationHandlerStop
+
+
 def run_telegram() -> None:
     """Поллинг Telegram: CommandHandler на четыре команды (/start, /status,
     /report, /help), MessageHandler на свободный текст, CallbackQueryHandler
@@ -2421,28 +2465,30 @@ def run_telegram() -> None:
     from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
     from telegram.request import HTTPXRequest
 
+    global _STARTED_AT
+    _STARTED_AT = _dt.datetime.now(_dt.timezone.utc)
+    _STALE_NOTIFIED.clear()
+
     request = HTTPXRequest(proxy=SETTINGS.telegram_proxy)
     updates_request = HTTPXRequest(proxy=SETTINGS.telegram_proxy, read_timeout=40,
                                    connect_timeout=20, write_timeout=20, pool_timeout=20)
     app = (Application.builder().token(SETTINGS.telegram_token)
           .request(request).get_updates_request(updates_request)
           .post_init(_post_init).build())
+    # Группа -1 — раньше всех остальных: страж очереди простоя смотрит любое
+    # сообщение, включая команды, и решает, дойдёт ли оно до разбора.
+    app.add_handler(MessageHandler(filters.ALL, _skip_stale), group=-1)
     for cmd in ("start", "status", "report", "help"):
         app.add_handler(CommandHandler(cmd, _on_text))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _on_text))
     app.add_handler(CallbackQueryHandler(_on_advice, pattern="^ai_advice$"))
     print("Telegram-бот запущен. Ctrl+C для остановки.")
-    # drop_pending_updates=True — накопленное за время простоя отбрасывается.
-    # Без него Telegram при запуске отдаёт всю очередь разом: сообщения,
-    # отправленные пока бот лежал, разбираются одно за другим, и человек видит
-    # ответ на каждое — читается как дублирование (живой случай 2026-08-26: два
-    # /start, отправленных до запуска процесса, дали два приветствия подряд).
-    # Для команд это косметика, но канал общий: отложенная «потратил 3200 в
-    # ВкусВилле» точно так же ляжет в базу спустя часы — уже после того, как
-    # человек счёл сообщение потерянным и ввёл трату заново. Потеря сообщения
-    # при простое заметна (подтверждение не пришло), двойная запись траты —
-    # нет, поэтому размен в пользу отбрасывания.
-    app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+    # Очередь простоя не отбрасывается на стороне Telegram: она доходит до
+    # бота, а _skip_stale (группа -1) не даёт ей исполниться и отвечает
+    # человеку, что сообщения нужно отправить заново. Прежний
+    # drop_pending_updates=True делал то же самое молча — и человек не узнавал,
+    # что его трата не записана (замечание ревью 2026-08-26 к PR #6).
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 # ===== 11. ТОЧКА ВХОДА =====

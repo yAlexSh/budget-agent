@@ -2315,11 +2315,12 @@ def test_cli_doctor_exits_with_returncode_from_cmd_doctor(monkeypatch):
 
 # ===== Правка по живой обратной связи (2026-08-26) =====
 #
-# run_polling вызывался без drop_pending_updates: очередь, накопленная за
-# время простоя, разбиралась при старте процесса. Живой случай — два /start,
-# отправленных до запуска бота, дали два приветствия подряд и выглядели как
-# дублирование ответа. Тест держит флаг на месте: уберите
-# drop_pending_updates=True из run_telegram — он покраснеет.
+# Очередь простоя разбиралась при старте процесса: два /start, отправленных до
+# запуска бота, дали два приветствия подряд. PR #6 закрыл это флагом
+# drop_pending_updates=True, но вместе с приветствиями молча терялись траты и
+# ответы на висящие вопросы (замечание ревью). Теперь очередь доходит до бота,
+# а не исполняется стражем _skip_stale — тест держит на месте обе половины:
+# и отсутствие флага, и регистрацию стража перед остальными обработчиками.
 #
 # Подмена идёт по "telegram.ext.Application", а не по атрибуту budget_agent:
 # run_telegram импортирует Application внутри тела функции, поэтому имя
@@ -2327,13 +2328,14 @@ def test_cli_doctor_exits_with_returncode_from_cmd_doctor(monkeypatch):
 # этом не задействована — до app.run_polling() настоящий Application не
 # создаётся вовсе.
 
-def test_run_polling_drops_pending_updates(monkeypatch):
+def test_run_polling_keeps_queue_and_registers_stale_guard(monkeypatch):
     recorded = {}
     handlers = []
 
     class _FakeApp:
         def add_handler(self, handler, *a, **k):
-            handlers.append(handler)
+            group = k.get("group", a[0] if a else 0)
+            handlers.append((handler, group))
         def run_polling(self, **kwargs):
             recorded.update(kwargs)
 
@@ -2354,13 +2356,16 @@ def test_run_polling_drops_pending_updates(monkeypatch):
 
     run_telegram()
 
-    assert recorded.get("drop_pending_updates") is True, (
-        "очередь простоя не отбрасывается — накопленные сообщения будут "
-        "разобраны при старте")
-    # Заодно фиксируем, что подмена не сломала регистрацию: четыре команды,
-    # свободный текст и кнопка «Совет от ИИ» — иначе тест мог бы позеленеть
-    # на пустом run_telegram, ничего в действительности не проверив.
-    assert len(handlers) == 6, len(handlers)
+    assert "drop_pending_updates" not in recorded, (
+        "очередь не должна отбрасываться на стороне Telegram — иначе человек "
+        "не узнает, что его сообщение не обработано")
+    # Заодно фиксируем, что подмена не сломала регистрацию: страж, четыре
+    # команды, свободный текст и кнопка «Совет от ИИ» — иначе тест мог бы
+    # позеленеть на пустом run_telegram, ничего в действительности не проверив.
+    assert len(handlers) == 7, len(handlers)
+    guards = [g for h, g in handlers if g < 0]
+    assert guards == [-1], "страж очереди простоя обязан идти раньше остальных обработчиков"
+    assert budget_agent._STARTED_AT is not None, "момент запуска не зафиксирован"
 
 
 # ===== 4. Подтверждение смены лимита (закрытие гэпа из ревью PR #4) =====
@@ -2517,3 +2522,95 @@ def test_declined_limit_change_keeps_punctuation():
     finally:
         _cleanup_chat(914)
         _restore_seed_limit()
+
+
+# ===== 5. Очередь Telegram за время простоя (follow-up к PR #6) =====
+#
+# PR #6 отбрасывал очередь целиком (drop_pending_updates=True). Это убирало
+# двойные приветствия, но вместе с ними молча теряло реальные траты и ответы
+# на висящие вопросы — замечание ревью 2026-08-26. Отменять действие поздним
+# сообщением по-прежнему нельзя (удалить записанную транзакцию бот не умеет),
+# поэтому устаревший ввод по-прежнему не исполняется — но перестаёт исчезать
+# молча: первый обработчик отвечает один раз на чат и останавливает разбор.
+
+import datetime as _dtest
+
+
+class _FakeDatedUpdate:
+    """Update с датой сообщения — её у _FakeUpdate нет, а страж смотрит именно
+    на неё."""
+
+    def __init__(self, text, date, chat_id=1, user_id=555, chat_type="private"):
+        self.message = _FakeMessage(text, chat_id=chat_id, user_id=user_id,
+                                     chat_type=chat_type)
+        self.message.date = date
+        self.callback_query = None
+
+
+def _guard_started_at(monkeypatch, started_at):
+    monkeypatch.setattr("budget_agent._STARTED_AT", started_at)
+    monkeypatch.setattr("budget_agent._STALE_NOTIFIED", set())
+
+
+def test_stale_message_is_not_processed_and_gets_a_notice(monkeypatch):
+    from telegram.ext import ApplicationHandlerStop
+    from budget_agent import _skip_stale
+
+    monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(broadcast_steps=False))
+    monkeypatch.setattr("budget_agent.route_message",
+                        lambda *a, **k: pytest.fail("устаревшее сообщение не должно исполняться"))
+    started = _dtest.datetime.now(_dtest.timezone.utc)
+    _guard_started_at(monkeypatch, started)
+
+    update = _FakeDatedUpdate("потратил 3200 в ВкусВилле",
+                              started - _dtest.timedelta(hours=2))
+    context = _FakeContext()
+    with pytest.raises(ApplicationHandlerStop):
+        asyncio.run(_skip_stale(update, context))
+    assert len(context.bot.sent) == 1
+    assert "заново" in context.bot.sent[0]["text"]
+
+
+def test_second_stale_message_in_same_chat_is_silent(monkeypatch):
+    from telegram.ext import ApplicationHandlerStop
+    from budget_agent import _skip_stale
+
+    monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(broadcast_steps=False))
+    started = _dtest.datetime.now(_dtest.timezone.utc)
+    _guard_started_at(monkeypatch, started)
+    old = started - _dtest.timedelta(minutes=30)
+    context = _FakeContext()
+
+    for text in ("/start", "/start"):
+        with pytest.raises(ApplicationHandlerStop):
+            asyncio.run(_skip_stale(_FakeDatedUpdate(text, old), context))
+    assert len(context.bot.sent) == 1, "предупреждение шлётся один раз на чат, а не на сообщение"
+
+
+def test_fresh_message_passes_the_stale_guard(monkeypatch):
+    from budget_agent import _skip_stale
+
+    monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(broadcast_steps=False))
+    started = _dtest.datetime.now(_dtest.timezone.utc)
+    _guard_started_at(monkeypatch, started)
+
+    update = _FakeDatedUpdate("сколько потрачено", started + _dtest.timedelta(seconds=5))
+    context = _FakeContext()
+    asyncio.run(_skip_stale(update, context))   # без ApplicationHandlerStop
+    assert context.bot.sent == [], "свежее сообщение страж не трогает"
+
+
+def test_stale_message_from_stranger_gets_no_notice(monkeypatch):
+    from telegram.ext import ApplicationHandlerStop
+    from budget_agent import _skip_stale
+
+    monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(broadcast_steps=False))
+    started = _dtest.datetime.now(_dtest.timezone.utc)
+    _guard_started_at(monkeypatch, started)
+
+    update = _FakeDatedUpdate("привет", started - _dtest.timedelta(hours=1),
+                              chat_id=777, user_id=999)
+    context = _FakeContext()
+    with pytest.raises(ApplicationHandlerStop):
+        asyncio.run(_skip_stale(update, context))
+    assert context.bot.sent == [], "посторонним бот не отвечает и здесь"
