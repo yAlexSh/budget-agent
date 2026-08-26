@@ -1889,14 +1889,18 @@ def test_route_message_limit_answer_with_unit_end_to_end():
 
 # ---- 2. Инструмент set_budget_limit ----
 
-def test_set_budget_limit_updates_and_returns_old_and_new():
+def test_set_budget_limit_returns_old_and_new_amounts():
+    """Обе величины по-прежнему возвращаются — на них строится вопрос
+    подтверждения («с 140 000 ₽ на 200 000 ₽»). Изменилось другое: запись
+    теперь делает подтверждение, а не сам инструмент (см. раздел 4)."""
     try:
         r = set_budget_limit(PRIV_H, 200000)
         assert r["data"]["old_amount"] == _CANONICAL_SEED_LIMIT
-        assert r["data"]["new_amount"] == 200000
+        assert r["data"]["amount"] == 200000
         assert r["source_keys"] == ["family_data"]
-        assert _current_limit_row()[0] == 200000
     finally:
+        with db() as conn:
+            conn.execute("DELETE FROM dialog_state WHERE chat_id=%s", (PRIV_H.chat_id,))
         _restore_seed_limit()
 
 def test_set_budget_limit_rejects_below_threshold_without_writing():
@@ -1911,11 +1915,13 @@ def test_set_budget_limit_is_registered_in_tool_registry():
     assert "set_budget_limit" in TOOL_REGISTRY
     try:
         r = TOOL_REGISTRY["set_budget_limit"](PRIV_H, {"amount": 210000})
-        assert r["data"]["new_amount"] == 210000
+        assert r["data"]["amount"] == 210000
     finally:
+        with db() as conn:
+            conn.execute("DELETE FROM dialog_state WHERE chat_id=%s", (PRIV_H.chat_id,))
         _restore_seed_limit()
 
-def test_agent_can_change_limit_via_tool(monkeypatch):
+def test_agent_stages_limit_change_via_tool(monkeypatch):
     # Логика проверяется без единого живого вызова модели: structured_call
     # подменён заранее заданным сценарием шагов (тот же приём, что и у
     # test_agent_calls_tool_then_finalizes выше).
@@ -1928,8 +1934,13 @@ def test_agent_can_change_limit_via_tool(monkeypatch):
     try:
         ans, registry, any_empty_result = run_agent("измени лимит на 220 тысяч", PRIV_H)
         assert "220 000" in ans.summary
-        assert _current_limit_row()[0] == 220000
+        # Сам цикл агента лимит не пишет: инструмент готовит смену, запись
+        # делает подтверждение через route_message (см. раздел 4).
+        assert _current_limit_row()[0] == _CANONICAL_SEED_LIMIT
+        assert get_state(PRIV_H.chat_id, PRIV_H.user_id)["state"] == "awaiting_limit_confirm"
     finally:
+        with db() as conn:
+            conn.execute("DELETE FROM dialog_state WHERE chat_id=%s", (PRIV_H.chat_id,))
         _restore_seed_limit()
 
 
@@ -2350,3 +2361,159 @@ def test_run_polling_drops_pending_updates(monkeypatch):
     # свободный текст и кнопка «Совет от ИИ» — иначе тест мог бы позеленеть
     # на пустом run_telegram, ничего в действительности не проверив.
     assert len(handlers) == 6, len(handlers)
+
+
+# ===== 4. Подтверждение смены лимита (закрытие гэпа из ревью PR #4) =====
+#
+# Инструмент set_budget_limit писал лимит сразу. Если человек не назвал сумму,
+# модель была вправе придумать число и записать его без единого вопроса: порог
+# MIN_SENSIBLE_LIMIT ловит грубую ошибку разбора, но не самодеятельность.
+# Теперь инструмент только готовит смену и ставит dialog_state в
+# awaiting_limit_confirm, а запись делает детерминированный обработчик ответа —
+# по образцу awaiting_category. Диалоговый ввод лимита (/start → awaiting_limit)
+# не затронут: там число называет сам человек, подтверждать нечего.
+
+def _cleanup_chat(chat_id: int):
+    with db() as conn:
+        conn.execute("DELETE FROM dialog_state WHERE chat_id=%s", (chat_id,))
+
+
+def test_set_budget_limit_stages_confirmation_without_writing():
+    """Инструмент агента не пишет лимит сразу — он готовит подтверждение."""
+    before = _current_limit_row()
+    try:
+        r = set_budget_limit(PRIV_H, 210000)
+        assert r["data"]["pending_confirmation"] is True
+        assert r["data"]["amount"] == 210000
+        assert _current_limit_row() == before, "лимит не должен меняться до подтверждения"
+        st = get_state(PRIV_H.chat_id, PRIV_H.user_id)
+        assert st["state"] == "awaiting_limit_confirm"
+        assert st["pending"]["amount"] == 210000
+    finally:
+        _cleanup_chat(PRIV_H.chat_id)
+        _restore_seed_limit()
+
+
+def test_set_budget_limit_below_threshold_stages_nothing():
+    """Отказ по порогу остаётся отказом: ни записи, ни висящего вопроса."""
+    before = _current_limit_row()
+    try:
+        r = set_budget_limit(PRIV_H, 250)
+        assert r.get("error")
+        assert _current_limit_row() == before
+        assert get_state(PRIV_H.chat_id, PRIV_H.user_id)["state"] == "base"
+    finally:
+        _cleanup_chat(PRIV_H.chat_id)
+
+
+def test_agent_limit_change_asks_before_writing(monkeypatch):
+    """Ответ на смену лимита — детерминированный вопрос, а не текст модели.
+
+    Модель в сценарии рапортует «Лимит изменён» — если бы её текст уходил
+    наружу как есть, человек прочитал бы о свершившейся смене, которой не было.
+    """
+    ctx = Ctx("husband", "private", 910)
+    step = NextStep(goal_progress="начало", plan_remaining_steps=["изменить лимит"],
+                    decision_summary="меняю лимит", task_completed=False,
+                    call={"tool": "set_budget_limit", "amount": 220000})
+    final = FinalAnswer(summary="Лимит изменён: было 140 000 ₽, стало 220 000 ₽.",
+                        details=[], scenarios=[], source_keys=["family_data"])
+    monkeypatch.setattr("budget_agent.structured_call", _script([step, final]))
+    monkeypatch.setattr("budget_agent.parse_spending", lambda *a, **k: None)
+    try:
+        out = route_message("поставь разумный месячный лимит", ctx)
+        assert "220 000" in out
+        assert "Лимит изменён" not in out, "текст модели не должен уходить наружу как есть"
+        assert _current_limit_row()[0] == _CANONICAL_SEED_LIMIT, "запись до подтверждения"
+        st = get_state(910)
+        assert st["state"] == "awaiting_limit_confirm"
+        assert st["pending"]["amount"] == 220000
+    finally:
+        _cleanup_chat(910)
+        _restore_seed_limit()
+
+
+def test_confirmed_limit_change_writes_new_amount():
+    """«да» в состоянии awaiting_limit_confirm записывает подготовленную сумму."""
+    set_state(911, "awaiting_limit_confirm",
+              {"amount": 220000, "old_amount": _CANONICAL_SEED_LIMIT})
+    ctx = Ctx("husband", "private", 911)
+    try:
+        out = route_message("да", ctx)
+        assert "220 000" in out
+        assert _current_limit_row()[0] == 220000
+        assert get_state(911)["state"] == "base"
+    finally:
+        _cleanup_chat(911)
+        _restore_seed_limit()
+
+
+def test_declined_limit_change_keeps_old_amount():
+    """«нет» снимает подготовленную смену и оставляет прежний лимит."""
+    set_state(912, "awaiting_limit_confirm",
+              {"amount": 220000, "old_amount": _CANONICAL_SEED_LIMIT})
+    ctx = Ctx("husband", "private", 912)
+    try:
+        out = route_message("нет", ctx)
+        assert _current_limit_row()[0] == _CANONICAL_SEED_LIMIT
+        assert get_state(912)["state"] == "base"
+        assert "140 000" in out
+    finally:
+        _cleanup_chat(912)
+        _restore_seed_limit()
+
+
+def test_unrelated_message_drops_prepared_limit_change(monkeypatch):
+    """Человек передумал отвечать: висящая смена снимается, а не удерживается.
+
+    Тот же принцип, что у awaiting_category и awaiting_limit — сообщение идёт
+    дальше по обычным ступеням, но с уведомлением, что смена не состоялась.
+    """
+    set_state(913, "awaiting_limit_confirm",
+              {"amount": 220000, "old_amount": _CANONICAL_SEED_LIMIT})
+    ctx = Ctx("husband", "private", 913)
+    monkeypatch.setattr("budget_agent.parse_spending", lambda *a, **k: None)
+    monkeypatch.setattr("budget_agent.run_agent",
+                        lambda *a, **k: (FinalAnswer(summary="Вчера потрачено 3 200 ₽.",
+                                                     details=[], scenarios=[],
+                                                     source_keys=["family_data"]),
+                                         {"family_data"}, False))
+    try:
+        out = route_message("сколько я потратил вчера", ctx)
+        assert "3 200" in out, "исходный вопрос должен быть отвечен"
+        assert "не изменён" in out, "о снятой смене лимита нужно сказать явно"
+        assert _current_limit_row()[0] == _CANONICAL_SEED_LIMIT
+        assert get_state(913)["state"] == "base"
+    finally:
+        _cleanup_chat(913)
+        _restore_seed_limit()
+
+
+def test_limit_texts_keep_their_punctuation():
+    """Пробел вместо разделителя разрядов ставится только в числах.
+
+    Раньше .replace(",", " ") применялся ко всей фразе целиком, и запятая
+    предложения («Ответьте «да», «нет» …») пропадала вместе с разделителем
+    разрядов — поймано на живом прогоне CLI.
+    """
+    from budget_agent import _limit_confirmation_question, _reset_notice
+
+    q = _limit_confirmation_question({"amount": 220000, "old_amount": 140000})
+    assert "220 000" in q and "140 000" in q
+    assert "запишу, «нет»" in q
+
+    notice = _reset_notice("awaiting_limit_confirm", {"amount": 220000, "old_amount": 140000})
+    assert "220 000" in notice and "140 000" in notice
+    assert "не изменён, прежние" in notice
+
+
+def test_declined_limit_change_keeps_punctuation():
+    set_state(914, "awaiting_limit_confirm",
+              {"amount": 220000, "old_amount": _CANONICAL_SEED_LIMIT})
+    try:
+        out = route_message("нет", Ctx("husband", "private", 914))
+        assert out.startswith("Хорошо, лимит не изменён")
+        assert "140 000" in out
+    finally:
+        _cleanup_chat(914)
+        _restore_seed_limit()
