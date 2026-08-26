@@ -2488,7 +2488,15 @@ def run_telegram() -> None:
     # человеку, что сообщения нужно отправить заново. Прежний
     # drop_pending_updates=True делал то же самое молча — и человек не узнавал,
     # что его трата не записана (замечание ревью 2026-08-26 к PR #6).
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    #
+    # Подписка на message и callback_query, а не Update.ALL_TYPES: другие типы
+    # мы не обрабатываем, а edited_message при ALL_TYPES проходил filters.TEXT
+    # в _on_text, где resolve_ctx падал на ветке callback_query (update.message
+    # у правки — None). Человек, поправивший опечатку в «потратил 3200»,
+    # получал полную тишину и исключение в журнале. Правки сообщений бот не
+    # отслеживает осознанно: разобранная заново трата легла бы вторым
+    # экземпляром — та же логика, что у стража очереди простоя выше.
+    app.run_polling(allowed_updates=["message", "callback_query"])
 
 
 # ===== 11. ТОЧКА ВХОДА =====

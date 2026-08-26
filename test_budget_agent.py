@@ -2359,6 +2359,11 @@ def test_run_polling_keeps_queue_and_registers_stale_guard(monkeypatch):
     assert "drop_pending_updates" not in recorded, (
         "очередь не должна отбрасываться на стороне Telegram — иначе человек "
         "не узнает, что его сообщение не обработано")
+    assert recorded.get("allowed_updates") == ["message", "callback_query"], (
+        "подписка шире обрабатываемых типов: при Update.ALL_TYPES "
+        "edited_message проходил filters.TEXT в _on_text, где resolve_ctx "
+        "падал на ветке callback_query — человек, поправивший опечатку в "
+        "сообщении, получал тишину и исключение в журнале")
     # Заодно фиксируем, что подмена не сломала регистрацию: страж, четыре
     # команды, свободный текст и кнопка «Совет от ИИ» — иначе тест мог бы
     # позеленеть на пустом run_telegram, ничего в действительности не проверив.
