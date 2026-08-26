@@ -2470,8 +2470,23 @@ def run_telegram() -> None:
     _STALE_NOTIFIED.clear()
 
     request = HTTPXRequest(proxy=SETTINGS.telegram_proxy)
-    updates_request = HTTPXRequest(proxy=SETTINGS.telegram_proxy, read_timeout=40,
-                                   connect_timeout=20, write_timeout=20, pool_timeout=20)
+    # Против DPI (наблюдалось 2026-08-26): соединение get_updates рвётся
+    # инспекцией трафика, бот «глохнет» до перезапуска, хотя короткие
+    # getMe/sendMessage через тот же прокси проходят. Важно, чем эти таймауты
+    # НЕ являются: они не укорачивают жизнь TLS-соединения. Длительность
+    # одного getUpdates задаёт параметр timeout у run_polling (10 с по
+    # умолчанию), read_timeout — лишь сколько клиент ждёт ответа, а само
+    # соединение httpx переиспользует между запросами и опрос идёт встык —
+    # оно живёт всё время работы бота независимо от этих значений. Что
+    # правка даёт на самом деле: убитое соединение обнаруживается за 20 с
+    # вместо 40 (окно глухоты на инцидент вдвое короче), а неудачные попытки
+    # переподключения отваливаются за 10 с вместо 20 — restart-цикл
+    # run_polling (network_retry_loop) быстрее добирается до свежего
+    # соединения. read_timeout обязан оставаться больше длинного опроса
+    # (10 с), иначе клиент будет рвать ещё живые запросы. Это смягчение,
+    # не решение: сам фактор DPI в коде не устраним.
+    updates_request = HTTPXRequest(proxy=SETTINGS.telegram_proxy, read_timeout=20,
+                                   connect_timeout=10, write_timeout=20, pool_timeout=20)
     app = (Application.builder().token(SETTINGS.telegram_token)
           .request(request).get_updates_request(updates_request)
           .post_init(_post_init).build())
