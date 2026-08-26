@@ -1299,6 +1299,11 @@ TOOL_REGISTRY: dict[str, callable] = {
     "cbr_key_rate":      lambda ctx, a: cbr_key_rate(ctx),
 }
 
+# Успешный вызов этих инструментов уже изменил состояние. После него SGR
+# должен перейти к финализации, а не доверять модели решить, повторять ли
+# ту же запись на следующем шаге.
+SIDE_EFFECT_TOOLS = {"set_budget_limit"}
+
 _TOOL_HELP = """\
 - get_balance: остатки по счетам, без аргументов
 - get_expenses(period, category=None): траты за период; period — 'yesterday' | 'this_month' | 'last_month' | 'YYYY-MM'
@@ -1576,6 +1581,8 @@ def run_agent(question: str, ctx: Ctx, on_step: "callable | None" = None,
             any_empty_result = True
         history.append({"step": step.decision_summary, "tool": name, "result": result["data"],
                         "tool_error": result.get("error")})
+        if name in SIDE_EFFECT_TOOLS and not result.get("error"):
+            break
 
     try:
         final = structured_call(FinalAnswer, [
@@ -1622,7 +1629,11 @@ def needs_disclaimer(question: str, source_keys: list[str]) -> str | None:
     if any(k in q for k in INVEST_KEYS):
         return ("Это образовательное объяснение, а не персональная инвестиционная "
                 "рекомендация.")
-    if any(k.startswith("cbr:") for k in source_keys):
+    cbr_subjects = {
+        k[len("cbr:"):].partition("@")[0]
+        for k in source_keys if k.startswith("cbr:")
+    }
+    if cbr_subjects - {"key_rate", "inflation"}:
         return "Курс приведён по данным ЦБ; в банке курс обмена будет отличаться."
     return None
 
