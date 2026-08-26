@@ -661,7 +661,15 @@ def set_budget_limit(ctx: Ctx, amount: float) -> dict:
     менее отклоняет то же самое, что и _try_complete_limit: значения меньше
     MIN_SENSIBLE_LIMIT — тот же самый признак «сумму не поняли», что и в
     диалоговом вводе, поэтому проверка использует ту же константу, а не
-    отдельный порог."""
+    отдельный порог.
+
+    Инструмент НЕ пишет лимит сам — он готовит смену и ставит диалог в
+    awaiting_limit_confirm, а записывает подтверждение (см.
+    _try_complete_limit_confirm). Причина: сумму сюда приносит модель, и она
+    вправе придумать число, если человек его не называл — порог ловит грубую
+    ошибку разбора, но не самодеятельность. Диалоговый ввод лимита (/start →
+    awaiting_limit) подтверждения не требует: там число печатает сам человек,
+    переспрашивать нечего."""
     if amount < MIN_SENSIBLE_LIMIT:
         return {"data": None, "source_keys": [],
                 "error": (f"{amount:,.0f} ₽ — подозрительно маленький месячный лимит "
@@ -672,13 +680,12 @@ def set_budget_limit(ctx: Ctx, amount: float) -> dict:
         old_row = conn.execute(
             "SELECT amount FROM budget_limits WHERE period = 'monthly' AND scope = 'common'"
         ).fetchone()
-        old_amount = float(old_row[0]) if old_row else None
-        conn.execute(
-            """INSERT INTO budget_limits (period, amount, currency, scope)
-               VALUES ('monthly', %s, 'RUB', 'common')
-               ON CONFLICT (period, scope) DO UPDATE SET amount = EXCLUDED.amount""",
-            (amount,))
-    return {"data": {"old_amount": old_amount, "new_amount": float(amount)},
+    old_amount = float(old_row[0]) if old_row else None
+    set_state(ctx.chat_id, "awaiting_limit_confirm",
+              {"amount": float(amount), "old_amount": old_amount},
+              user_id=ctx.user_id)
+    return {"data": {"pending_confirmation": True, "amount": float(amount),
+                     "old_amount": old_amount},
             "source_keys": ["family_data"]}
 
 def forecast_cashflow(ctx: Ctx, months: int) -> dict:
@@ -1312,7 +1319,7 @@ _TOOL_HELP = """\
 - get_family_rule(key): семейное правило по ключу — large_purchase_threshold, emergency_fund_target, mandatory_monthly_expenses, vacation_indexation_pct, personal_money_share_pct, overspend_threshold
 - get_budget_status: лимит/потрачено/остаток за текущий календарный месяц, без аргументов
 - forecast_cashflow(months): помесячный прогноз рублёвого баланса на months месяцев вперёд
-- set_budget_limit(amount): изменить месячный лимит трат (₽, готовое число — «250 тыс» это 250000, переведи сам, не присылай текст с единицами); откажет и вернёт ошибку, если сумма меньше 1000 ₽ (похоже на недопонятую величину) — тогда переспроси точную сумму у человека, а не вызывай инструмент повторно с той же цифрой
+- set_budget_limit(amount): подготовить смену месячного лимита трат (₽, готовое число — «250 тыс» это 250000, переведи сам, не присылай текст с единицами); лимит меняется НЕ сразу — человеку уходит вопрос с подтверждением, поэтому не пиши, что лимит уже изменён; откажет и вернёт ошибку, если сумма меньше 1000 ₽ (похоже на недопонятую величину) — тогда переспроси точную сумму у человека, а не вызывай инструмент повторно с той же цифрой
 - search_knowledge(query): поиск по общим принципам финансовой грамотности (документы PF)
 - search_household(query): поиск по семейным договорённостям и истории (документы HH)
 - cbr_get_rate(char_code): курс ЦБ на сегодня, char_code — USD | EUR | CNY
@@ -1377,9 +1384,10 @@ _TOOL_HEURISTICS = """\
 советом: если человек назвал конкретную величину — вызови инструмент с ней \
 (переведи в рубли сам, если он назвал её словами вроде «250 тыс»); если \
 величину не назвал, но из семейных данных (обязательные расходы, доход, \
-текущий лимит) понятно, какая разумна — предложи конкретное число и \
-спроси подтверждения СЛЕДУЮЩИМ шагом, а не рассуждай об этом отвлечённо и \
-не завершай задачу без вызова инструмента, получив подтверждение."""
+текущий лимит) понятно, какая разумна — вызови инструмент с этим числом. \
+Сам инструмент лимит не пишет: он готовит смену, а человеку уходит вопрос \
+с подтверждением, и записывает уже ответ «да». Поэтому не объявляй смену \
+свершившейся и не жди подтверждения внутри шагов."""
 
 
 def who_gen(person: str | None) -> str:
@@ -2036,14 +2044,70 @@ def _try_complete_limit(text: str, ctx: Ctx) -> str | None:
     amount = _parse_amount(text)
     if amount is None or amount < MIN_SENSIBLE_LIMIT:
         return None
+    _write_monthly_limit(amount)
+    set_state(ctx.chat_id, "base", user_id=ctx.user_id)
+    return f"Готово. Месячный лимит {amount:,.0f} ₽.".replace(",", " ")
+
+
+def _write_monthly_limit(amount: float) -> None:
+    """Единственное место записи месячного лимита. Оба пути — диалоговый ввод
+    (_try_complete_limit) и подтверждение агентской смены
+    (_try_complete_limit_confirm) — идут сюда, чтобы условия записи (period,
+    scope, валюта) не разъезжались по файлу."""
     with db() as conn:
         conn.execute(
             """INSERT INTO budget_limits (period, amount, currency, scope)
                VALUES ('monthly', %s, 'RUB', 'common')
                ON CONFLICT (period, scope) DO UPDATE SET amount = EXCLUDED.amount""",
             (amount,))
-    set_state(ctx.chat_id, "base", user_id=ctx.user_id)
-    return f"Готово. Месячный лимит {amount:,.0f} ₽.".replace(",", " ")
+
+
+# Согласие и отказ разбираются по списку, а не моделью: ответ «да» не должен
+# зависеть от того, доступна ли языковая модель, и стоить обращения к ней.
+_CONFIRM_YES = {"да", "ага", "давай", "давайте", "подтверждаю", "ок", "окей", "верно", "yes"}
+_CONFIRM_NO = {"нет", "не надо", "не нужно", "отмена", "отменить", "no"}
+
+
+def _rub(amount: float) -> str:
+    """Сумма с неразрывным по смыслу разделителем разрядов: «140 000». Замена
+    применяется к самому числу, а не к готовой фразе — иначе, как показал
+    живой прогон CLI, вместе с разделителем разрядов пропадала и запятая
+    предложения."""
+    return f"{float(amount):,.0f}".replace(",", " ")
+
+
+def _limit_confirmation_question(pending: dict) -> str:
+    """Вопрос о подготовленной смене лимита. Собирается здесь, а не моделью:
+    иначе текст обещал бы одно, а dialog_state хранил другое — ровно тот
+    разрыв между обещанием и опорой в коде, ради которого подтверждение и
+    вводилось."""
+    new = pending["amount"]
+    old = pending.get("old_amount")
+    if old is None:
+        return (f"Задать месячный лимит {_rub(new)} ₽? Ответьте «да» — запишу, "
+                "«нет» — оставлю без лимита.")
+    return (f"Сменить месячный лимит с {_rub(old)} ₽ на {_rub(new)} ₽? "
+            "Ответьте «да» — запишу, «нет» — оставлю как есть.")
+
+
+def _try_complete_limit_confirm(text: str, ctx: Ctx, pending: dict) -> str | None:
+    """Пытается завершить awaiting_limit_confirm. Согласие пишет
+    подготовленную сумму, отказ снимает её, всё остальное — None: значит
+    человек ответил не на этот вопрос, и route_message ведёт сообщение
+    дальше обычными ступенями, как у awaiting_limit и awaiting_category."""
+    answer = text.strip().lower().rstrip(".!")
+    if answer in _CONFIRM_YES:
+        amount = float(pending["amount"])
+        _write_monthly_limit(amount)
+        set_state(ctx.chat_id, "base", user_id=ctx.user_id)
+        return f"Готово. Месячный лимит {_rub(amount)} ₽."
+    if answer in _CONFIRM_NO:
+        set_state(ctx.chat_id, "base", user_id=ctx.user_id)
+        old = pending.get("old_amount")
+        if old is None:
+            return "Хорошо, лимит не задан."
+        return f"Хорошо, лимит не изменён — прежние {_rub(old)} ₽."
+    return None
 
 
 def _try_complete_category(text: str, ctx: Ctx, pending: dict) -> str | None:
@@ -2103,6 +2167,11 @@ def _reset_notice(state: str, pending: dict | None) -> str:
                 f"не сохранена — категория не распознана.\n\n").replace(",", " ")
     if state == "awaiting_limit":
         return "Хорошо, к лимиту вернёмся позже — можно задать его снова через /start.\n\n"
+    if state == "awaiting_limit_confirm" and pending:
+        old = pending.get("old_amount")
+        tail = f", прежние {_rub(old)} ₽" if old is not None else ""
+        return (f"Смена лимита на {_rub(pending['amount'])} ₽ не подтверждена — "
+                f"лимит не изменён{tail}.\n\n")
     return ""
 
 
@@ -2153,6 +2222,12 @@ def route_message(text: str, ctx: Ctx, on_step=None) -> "str | tuple[str, dict]"
             return done
         notice = _reset_notice(st["state"], st["pending"])
         set_state(ctx.chat_id, "base", user_id=ctx.user_id)
+    elif st["state"] == "awaiting_limit_confirm":
+        done = _try_complete_limit_confirm(text, ctx, st["pending"])
+        if done is not None:
+            return done
+        notice = _reset_notice(st["state"], st["pending"])
+        set_state(ctx.chat_id, "base", user_id=ctx.user_id)
     elif st["state"] == "awaiting_category":
         done = _try_complete_category(text, ctx, st["pending"])
         if done is not None:
@@ -2165,6 +2240,12 @@ def route_message(text: str, ctx: Ctx, on_step=None) -> "str | tuple[str, dict]"
         return notice + _handle_spending(parsed, ctx)
 
     ans, registry, any_empty_result = run_agent(text, ctx, on_step=on_step)
+    staged = get_state(ctx.chat_id, ctx.user_id)
+    if staged["state"] == "awaiting_limit_confirm":
+        # Агент подготовил смену лимита. Наружу уходит детерминированный
+        # вопрос, а не текст модели: модель, вызвав инструмент, обычно уже
+        # рапортует о свершившейся смене, которой ещё не было.
+        return notice + _limit_confirmation_question(staged["pending"])
     return notice + render_answer(ans, ctx, text, registry, any_empty_result)
 
 
