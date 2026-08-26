@@ -2300,3 +2300,53 @@ def test_cli_doctor_exits_with_returncode_from_cmd_doctor(monkeypatch):
     with pytest.raises(SystemExit) as exc_info:
         main()
     assert exc_info.value.code == 1
+
+
+# ===== Правка по живой обратной связи (2026-08-26) =====
+#
+# run_polling вызывался без drop_pending_updates: очередь, накопленная за
+# время простоя, разбиралась при старте процесса. Живой случай — два /start,
+# отправленных до запуска бота, дали два приветствия подряд и выглядели как
+# дублирование ответа. Тест держит флаг на месте: уберите
+# drop_pending_updates=True из run_telegram — он покраснеет.
+#
+# Подмена идёт по "telegram.ext.Application", а не по атрибуту budget_agent:
+# run_telegram импортирует Application внутри тела функции, поэтому имя
+# разрешается в момент вызова и подменённый класс подхватывается. Сеть при
+# этом не задействована — до app.run_polling() настоящий Application не
+# создаётся вовсе.
+
+def test_run_polling_drops_pending_updates(monkeypatch):
+    recorded = {}
+    handlers = []
+
+    class _FakeApp:
+        def add_handler(self, handler, *a, **k):
+            handlers.append(handler)
+        def run_polling(self, **kwargs):
+            recorded.update(kwargs)
+
+    class _FakeBuilder:
+        def token(self, *a, **k): return self
+        def request(self, *a, **k): return self
+        def get_updates_request(self, *a, **k): return self
+        def post_init(self, *a, **k): return self
+        def build(self): return _FakeApp()
+
+    class _FakeApplication:
+        @staticmethod
+        def builder(): return _FakeBuilder()
+
+    monkeypatch.setattr("telegram.ext.Application", _FakeApplication)
+    monkeypatch.setattr("budget_agent.SETTINGS", SETTINGS.__class__(
+        **{**SETTINGS.__dict__, "telegram_token": "111:test-token"}))
+
+    run_telegram()
+
+    assert recorded.get("drop_pending_updates") is True, (
+        "очередь простоя не отбрасывается — накопленные сообщения будут "
+        "разобраны при старте")
+    # Заодно фиксируем, что подмена не сломала регистрацию: четыре команды,
+    # свободный текст и кнопка «Совет от ИИ» — иначе тест мог бы позеленеть
+    # на пустом run_telegram, ничего в действительности не проверив.
+    assert len(handlers) == 6, len(handlers)
