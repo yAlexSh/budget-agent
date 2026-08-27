@@ -1,5 +1,5 @@
 """Прогон 12 демо-сценариев задачи 12 (см. .superpowers/sdd/2026-08-23-budget-agent/
-task-12-brief.md, шаг 3 и docs/2026-08-23-design.md, раздел 12).
+task-12-brief.md, шаг 3 и docs/design.md, раздел 12).
 
 Вызывает route_message для каждого сценария на живом бэкенде (Ollama,
 OLLAMA_MODEL=gpt-oss:120b-cloud — см. .env), печатает вопрос, ответ и

@@ -177,4 +177,4 @@ Telegram возможен только через SOCKS-прокси (`TELEGRAM_
 ## Ссылки
 
 - PR #2 — конкретные исправления поставки (`.env.example`, `requirements.txt`, README) — merged.
-- `docs/2026-08-23-design.md` — полное описание архитектуры.
+- `docs/design.md` — полное описание архитектуры.
