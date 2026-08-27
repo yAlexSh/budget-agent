@@ -151,7 +151,7 @@ Telegram-бот, который отвечает на вопросы о семе
 | `seed_data.json` | Сид-база: счета, категории, 518 транзакций за 9 месяцев, цели, правила |
 | `make_seed.py` | Генератор сид-базы, детерминированный |
 | `run_demo.py` | Прогон 12 сценариев |
-| `test_budget_agent.py` | 147 тестов |
+| `test_budget_agent.py` | Тесты приложения; запуск описан в `docs/operations.md` |
 | `docker-compose.yml` | Postgres с pgvector |
 | `.env.example` | Шаблон конфигурации |
 | `setup.sh` | Первичная настройка: окружение, зависимости, `.env`, финальная `--doctor` |
