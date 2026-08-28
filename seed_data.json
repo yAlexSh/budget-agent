@@ -251,6 +251,17 @@
       "person": null
     },
     {
+      "ts": "2025-12-02T11:53:00",
+      "amount": 3223,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
       "ts": "2025-12-03T09:07:00",
       "amount": 900,
       "currency": "RUB",
@@ -285,32 +296,10 @@
     },
     {
       "ts": "2025-12-03T19:49:00",
-      "amount": 4378,
+      "amount": 2689,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2025-12-03T20:13:00",
-      "amount": 6573,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Развлечения",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2025-12-04T19:50:00",
-      "amount": 2623,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Одежда",
       "merchant": null,
       "comment": null,
       "scope": "husband",
@@ -329,13 +318,24 @@
     },
     {
       "ts": "2025-12-05T10:00:00",
-      "amount": 132000,
+      "amount": 105600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
       "merchant": null,
       "comment": null,
       "scope": "common",
+      "person": "husband"
+    },
+    {
+      "ts": "2025-12-05T10:05:00",
+      "amount": 26400,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "husband",
       "person": "husband"
     },
     {
@@ -373,7 +373,7 @@
     },
     {
       "ts": "2025-12-06T09:23:00",
-      "amount": 5743,
+      "amount": 2185,
       "currency": "RUB",
       "account": "Личная карта жены",
       "category": "Развлечения",
@@ -582,7 +582,7 @@
     },
     {
       "ts": "2025-12-19T15:15:00",
-      "amount": 1985,
+      "amount": 1246,
       "currency": "RUB",
       "account": "Личная карта жены",
       "category": "Подарки",
@@ -626,13 +626,24 @@
     },
     {
       "ts": "2025-12-20T10:00:00",
-      "amount": 96000,
+      "amount": 76800,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
       "merchant": null,
       "comment": null,
       "scope": "common",
+      "person": "wife"
+    },
+    {
+      "ts": "2025-12-20T10:05:00",
+      "amount": 19200,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "wife",
       "person": "wife"
     },
     {
@@ -669,6 +680,17 @@
       "person": null
     },
     {
+      "ts": "2025-12-22T22:21:00",
+      "amount": 3508,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
       "ts": "2025-12-23T17:35:00",
       "amount": 5978,
       "currency": "RUB",
@@ -680,6 +702,17 @@
       "person": null
     },
     {
+      "ts": "2025-12-23T20:06:00",
+      "amount": 1983,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
       "ts": "2025-12-23T20:09:00",
       "amount": 1977,
       "currency": "RUB",
@@ -689,6 +722,17 @@
       "comment": null,
       "scope": "common",
       "person": null
+    },
+    {
+      "ts": "2025-12-24T19:00:00",
+      "amount": 4591,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Здоровье",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
     },
     {
       "ts": "2025-12-24T19:34:00",
@@ -747,7 +791,7 @@
     },
     {
       "ts": "2025-12-27T16:42:00",
-      "amount": 4815,
+      "amount": 2907,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Одежда",
@@ -766,17 +810,6 @@
       "comment": null,
       "scope": "common",
       "person": null
-    },
-    {
-      "ts": "2025-12-28T11:53:00",
-      "amount": 9892,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Одежда",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
     },
     {
       "ts": "2025-12-28T19:01:00",
@@ -823,8 +856,8 @@
       "person": null
     },
     {
-      "ts": "2025-12-31T12:44:00",
-      "amount": 6827,
+      "ts": "2025-12-31T14:12:00",
+      "amount": 6748,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Образование",
@@ -846,7 +879,7 @@
     },
     {
       "ts": "2026-01-01T11:03:00",
-      "amount": 6336,
+      "amount": 3668,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Здоровье",
@@ -857,7 +890,7 @@
     },
     {
       "ts": "2026-01-01T16:30:00",
-      "amount": 890,
+      "amount": 629,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -867,19 +900,19 @@
       "person": null
     },
     {
-      "ts": "2026-01-01T20:05:00",
-      "amount": 900,
+      "ts": "2026-01-01T18:05:00",
+      "amount": 4606,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
+      "category": "Рестораны",
+      "merchant": "суши-бар",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-01-01T23:26:00",
-      "amount": 900,
+      "amount": 811,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -890,7 +923,7 @@
     },
     {
       "ts": "2026-01-02T11:24:00",
-      "amount": 5493,
+      "amount": 5883,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -901,7 +934,7 @@
     },
     {
       "ts": "2026-01-04T11:54:00",
-      "amount": 888,
+      "amount": 896,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -912,7 +945,7 @@
     },
     {
       "ts": "2026-01-04T22:39:00",
-      "amount": 3261,
+      "amount": 2130,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Подарки",
@@ -934,7 +967,7 @@
     },
     {
       "ts": "2026-01-05T08:35:00",
-      "amount": 897,
+      "amount": 582,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -945,7 +978,7 @@
     },
     {
       "ts": "2026-01-05T10:00:00",
-      "amount": 132000,
+      "amount": 105600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -955,8 +988,19 @@
       "person": "husband"
     },
     {
+      "ts": "2026-01-05T10:05:00",
+      "amount": 26400,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
       "ts": "2026-01-05T21:20:00",
-      "amount": 870,
+      "amount": 898,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -967,7 +1011,7 @@
     },
     {
       "ts": "2026-01-06T10:31:00",
-      "amount": 5989,
+      "amount": 5976,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -978,7 +1022,7 @@
     },
     {
       "ts": "2026-01-06T19:12:00",
-      "amount": 4095,
+      "amount": 5546,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -989,7 +1033,7 @@
     },
     {
       "ts": "2026-01-06T21:08:00",
-      "amount": 6844,
+      "amount": 2355,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -1000,7 +1044,7 @@
     },
     {
       "ts": "2026-01-07T12:51:00",
-      "amount": 3125,
+      "amount": 5971,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1010,19 +1054,8 @@
       "person": null
     },
     {
-      "ts": "2026-01-08T15:32:00",
-      "amount": 5997,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "вкусвилл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-01-09T13:16:00",
-      "amount": 899,
+      "ts": "2026-01-08T20:32:00",
+      "amount": 881,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1032,8 +1065,30 @@
       "person": null
     },
     {
-      "ts": "2026-01-09T15:35:00",
+      "ts": "2026-01-09T13:16:00",
       "amount": 900,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-01-09T13:52:00",
+      "amount": 6558,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Подарки",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-01-09T15:35:00",
+      "amount": 795,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1044,7 +1099,7 @@
     },
     {
       "ts": "2026-01-09T15:48:00",
-      "amount": 6785,
+      "amount": 6251,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -1055,7 +1110,7 @@
     },
     {
       "ts": "2026-01-09T19:03:00",
-      "amount": 5954,
+      "amount": 5946,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1063,17 +1118,6 @@
       "comment": null,
       "scope": "common",
       "person": null
-    },
-    {
-      "ts": "2026-01-09T22:44:00",
-      "amount": 5600,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Подарки",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
     },
     {
       "ts": "2026-01-10T08:00:00",
@@ -1088,7 +1132,7 @@
     },
     {
       "ts": "2026-01-10T18:26:00",
-      "amount": 726,
+      "amount": 882,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1099,7 +1143,7 @@
     },
     {
       "ts": "2026-01-10T21:26:00",
-      "amount": 2276,
+      "amount": 1638,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Образование",
@@ -1110,7 +1154,7 @@
     },
     {
       "ts": "2026-01-11T20:55:00",
-      "amount": 4280,
+      "amount": 4667,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1120,19 +1164,8 @@
       "person": null
     },
     {
-      "ts": "2026-01-12T11:20:00",
-      "amount": 4952,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
       "ts": "2026-01-12T16:49:00",
-      "amount": 624,
+      "amount": 779,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1143,7 +1176,7 @@
     },
     {
       "ts": "2026-01-12T19:03:00",
-      "amount": 6000,
+      "amount": 5999,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1154,7 +1187,7 @@
     },
     {
       "ts": "2026-01-12T20:38:00",
-      "amount": 893,
+      "amount": 693,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1165,7 +1198,7 @@
     },
     {
       "ts": "2026-01-14T22:02:00",
-      "amount": 880,
+      "amount": 898,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1176,7 +1209,7 @@
     },
     {
       "ts": "2026-01-14T22:13:00",
-      "amount": 803,
+      "amount": 560,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1198,7 +1231,7 @@
     },
     {
       "ts": "2026-01-15T15:18:00",
-      "amount": 900,
+      "amount": 882,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1209,7 +1242,7 @@
     },
     {
       "ts": "2026-01-16T12:21:00",
-      "amount": 6968,
+      "amount": 6267,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -1220,7 +1253,7 @@
     },
     {
       "ts": "2026-01-17T10:16:00",
-      "amount": 5998,
+      "amount": 5999,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1231,7 +1264,7 @@
     },
     {
       "ts": "2026-01-18T11:40:00",
-      "amount": 899,
+      "amount": 704,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1241,19 +1274,8 @@
       "person": null
     },
     {
-      "ts": "2026-01-18T12:42:00",
-      "amount": 2638,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Здоровье",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
       "ts": "2026-01-19T13:01:00",
-      "amount": 693,
+      "amount": 575,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1264,7 +1286,7 @@
     },
     {
       "ts": "2026-01-19T16:25:00",
-      "amount": 5997,
+      "amount": 5123,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1275,7 +1297,7 @@
     },
     {
       "ts": "2026-01-19T22:02:00",
-      "amount": 6905,
+      "amount": 5174,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -1286,7 +1308,7 @@
     },
     {
       "ts": "2026-01-20T10:00:00",
-      "amount": 96000,
+      "amount": 76800,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -1296,8 +1318,19 @@
       "person": "wife"
     },
     {
+      "ts": "2026-01-20T10:05:00",
+      "amount": 19200,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
       "ts": "2026-01-20T14:34:00",
-      "amount": 5944,
+      "amount": 5952,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1308,7 +1341,7 @@
     },
     {
       "ts": "2026-01-20T20:35:00",
-      "amount": 5121,
+      "amount": 3712,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1319,7 +1352,7 @@
     },
     {
       "ts": "2026-01-21T09:49:00",
-      "amount": 894,
+      "amount": 899,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1330,7 +1363,7 @@
     },
     {
       "ts": "2026-01-21T10:37:00",
-      "amount": 900,
+      "amount": 897,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1338,21 +1371,10 @@
       "comment": null,
       "scope": "common",
       "person": null
-    },
-    {
-      "ts": "2026-01-23T10:47:00",
-      "amount": 10320,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Здоровье",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
     },
     {
       "ts": "2026-01-23T11:11:00",
-      "amount": 900,
+      "amount": 892,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1362,8 +1384,8 @@
       "person": null
     },
     {
-      "ts": "2026-01-24T14:56:00",
-      "amount": 4714,
+      "ts": "2026-01-24T12:20:00",
+      "amount": 4801,
       "currency": "RUB",
       "account": "Личная карта жены",
       "category": "Развлечения",
@@ -1384,8 +1406,30 @@
       "person": null
     },
     {
+      "ts": "2026-01-25T19:23:00",
+      "amount": 1848,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-01-26T11:20:00",
+      "amount": 1988,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Образование",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
       "ts": "2026-01-27T17:13:00",
-      "amount": 4069,
+      "amount": 5818,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1396,7 +1440,7 @@
     },
     {
       "ts": "2026-01-27T23:37:00",
-      "amount": 884,
+      "amount": 863,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1407,7 +1451,7 @@
     },
     {
       "ts": "2026-01-28T13:08:00",
-      "amount": 5997,
+      "amount": 5967,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1418,7 +1462,7 @@
     },
     {
       "ts": "2026-01-29T21:00:00",
-      "amount": 5905,
+      "amount": 5269,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1428,8 +1472,19 @@
       "person": null
     },
     {
+      "ts": "2026-01-29T21:09:00",
+      "amount": 4413,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Образование",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
       "ts": "2026-01-30T18:00:00",
-      "amount": 899,
+      "amount": 897,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1440,7 +1495,7 @@
     },
     {
       "ts": "2026-01-30T21:48:00",
-      "amount": 6625,
+      "amount": 6687,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -1451,7 +1506,7 @@
     },
     {
       "ts": "2026-01-31T13:06:00",
-      "amount": 5992,
+      "amount": 2560,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1462,7 +1517,7 @@
     },
     {
       "ts": "2026-01-31T13:42:00",
-      "amount": 6666,
+      "amount": 6810,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -1473,7 +1528,7 @@
     },
     {
       "ts": "2026-02-01T13:52:00",
-      "amount": 2227,
+      "amount": 6000,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1483,11 +1538,22 @@
       "person": null
     },
     {
-      "ts": "2026-02-02T09:00:00",
-      "amount": 7447,
+      "ts": "2026-02-01T20:11:00",
+      "amount": 900,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-02-01T21:57:00",
+      "amount": 5757,
       "currency": "RUB",
       "account": "Личная карта мужа",
-      "category": "Образование",
+      "category": "Здоровье",
       "merchant": null,
       "comment": null,
       "scope": "husband",
@@ -1495,7 +1561,7 @@
     },
     {
       "ts": "2026-02-02T10:20:00",
-      "amount": 900,
+      "amount": 897,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1505,15 +1571,15 @@
       "person": null
     },
     {
-      "ts": "2026-02-02T13:38:00",
-      "amount": 3153,
+      "ts": "2026-02-02T18:30:00",
+      "amount": 2700,
       "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Образование",
+      "account": "Личная карта мужа",
+      "category": "Здоровье",
       "merchant": null,
       "comment": null,
-      "scope": "wife",
-      "person": "wife"
+      "scope": "husband",
+      "person": "husband"
     },
     {
       "ts": "2026-02-05T08:00:00",
@@ -1528,7 +1594,7 @@
     },
     {
       "ts": "2026-02-05T10:00:00",
-      "amount": 132000,
+      "amount": 105600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -1538,8 +1604,19 @@
       "person": "husband"
     },
     {
+      "ts": "2026-02-05T10:05:00",
+      "amount": 26400,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
       "ts": "2026-02-05T12:33:00",
-      "amount": 899,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1549,23 +1626,12 @@
       "person": null
     },
     {
-      "ts": "2026-02-05T16:06:00",
-      "amount": 7109,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
       "ts": "2026-02-05T16:31:00",
-      "amount": 417,
+      "amount": 6358,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
+      "category": "Рестораны",
+      "merchant": "ресторан у моста",
       "comment": null,
       "scope": "common",
       "person": null
@@ -1582,19 +1648,19 @@
       "person": null
     },
     {
-      "ts": "2026-02-06T18:32:00",
-      "amount": 1570,
+      "ts": "2026-02-06T23:03:00",
+      "amount": 898,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "пятёрочка",
+      "category": "Транспорт",
+      "merchant": "автобус",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-02-07T08:35:00",
-      "amount": 705,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1605,7 +1671,7 @@
     },
     {
       "ts": "2026-02-07T18:18:00",
-      "amount": 5995,
+      "amount": 5797,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1615,19 +1681,8 @@
       "person": null
     },
     {
-      "ts": "2026-02-07T21:30:00",
-      "amount": 6922,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "пиццерия",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-02-07T22:31:00",
-      "amount": 669,
+      "amount": 392,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1637,34 +1692,34 @@
       "person": null
     },
     {
-      "ts": "2026-02-08T09:51:00",
-      "amount": 7090,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
-      "ts": "2026-02-08T10:42:00",
-      "amount": 7862,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
       "ts": "2026-02-08T14:51:00",
       "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
       "merchant": "метро",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-02-08T15:06:00",
+      "amount": 3093,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Здоровье",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-02-09T12:42:00",
+      "amount": 5993,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вв",
       "comment": null,
       "scope": "common",
       "person": null
@@ -1681,8 +1736,52 @@
       "person": null
     },
     {
+      "ts": "2026-02-10T11:34:00",
+      "amount": 4145,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Образование",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-02-10T15:02:00",
+      "amount": 5456,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-02-11T12:21:00",
+      "amount": 4770,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Развлечения",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-02-11T18:50:00",
+      "amount": 2500,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Развлечения",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
       "ts": "2026-02-11T19:00:00",
-      "amount": 877,
+      "amount": 887,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1693,7 +1792,7 @@
     },
     {
       "ts": "2026-02-12T08:17:00",
-      "amount": 900,
+      "amount": 623,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1703,15 +1802,26 @@
       "person": null
     },
     {
-      "ts": "2026-02-13T10:54:00",
-      "amount": 9637,
+      "ts": "2026-02-12T21:06:00",
+      "amount": 3968,
       "currency": "RUB",
       "account": "Личная карта жены",
-      "category": "Образование",
+      "category": "Подарки",
       "merchant": null,
       "comment": null,
       "scope": "wife",
       "person": "wife"
+    },
+    {
+      "ts": "2026-02-13T11:57:00",
+      "amount": 4998,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "магнит",
+      "comment": null,
+      "scope": "common",
+      "person": null
     },
     {
       "ts": "2026-02-13T12:03:00",
@@ -1726,7 +1836,7 @@
     },
     {
       "ts": "2026-02-13T14:51:00",
-      "amount": 711,
+      "amount": 850,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1736,8 +1846,19 @@
       "person": null
     },
     {
+      "ts": "2026-02-13T17:36:00",
+      "amount": 2854,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
       "ts": "2026-02-13T19:28:00",
-      "amount": 5460,
+      "amount": 1737,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1748,7 +1869,7 @@
     },
     {
       "ts": "2026-02-14T13:09:00",
-      "amount": 782,
+      "amount": 897,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1769,30 +1890,30 @@
       "person": "wife"
     },
     {
-      "ts": "2026-02-16T17:21:00",
-      "amount": 6994,
+      "ts": "2026-02-16T11:59:00",
+      "amount": 4116,
       "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "суши-бар",
+      "account": "Личная карта жены",
+      "category": "Одежда",
+      "merchant": null,
       "comment": null,
-      "scope": "common",
-      "person": null
+      "scope": "wife",
+      "person": "wife"
     },
     {
-      "ts": "2026-02-17T17:08:00",
-      "amount": 5819,
+      "ts": "2026-02-17T11:11:00",
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "перекрёсток",
+      "category": "Транспорт",
+      "merchant": "автобус",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-02-17T18:58:00",
-      "amount": 2509,
+      "amount": 5600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1802,30 +1923,8 @@
       "person": null
     },
     {
-      "ts": "2026-02-18T11:00:00",
-      "amount": 505,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-02-18T12:21:00",
-      "amount": 5451,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Развлечения",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
       "ts": "2026-02-18T13:51:00",
-      "amount": 4156,
+      "amount": 5997,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1835,19 +1934,8 @@
       "person": null
     },
     {
-      "ts": "2026-02-18T18:08:00",
-      "amount": 6997,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "ресторан у моста",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-02-18T21:02:00",
-      "amount": 6612,
+      "ts": "2026-02-18T14:00:00",
+      "amount": 6801,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -1857,30 +1945,19 @@
       "person": null
     },
     {
-      "ts": "2026-02-18T21:23:00",
-      "amount": 4475,
+      "ts": "2026-02-19T15:57:00",
+      "amount": 6323,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "пятёрочка",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-02-19T13:57:00",
-      "amount": 900,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "яндекс.такси",
+      "category": "Рестораны",
+      "merchant": "кафе на углу",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-02-19T20:47:00",
-      "amount": 4260,
+      "amount": 5995,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1891,7 +1968,7 @@
     },
     {
       "ts": "2026-02-20T10:00:00",
-      "amount": 96000,
+      "amount": 76800,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -1901,12 +1978,23 @@
       "person": "wife"
     },
     {
-      "ts": "2026-02-20T18:03:00",
-      "amount": 6685,
+      "ts": "2026-02-20T10:05:00",
+      "amount": 19200,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-02-20T15:53:00",
+      "amount": 6000,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "суши-бар",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
       "comment": null,
       "scope": "common",
       "person": null
@@ -1923,19 +2011,8 @@
       "person": null
     },
     {
-      "ts": "2026-02-21T13:06:00",
-      "amount": 900,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-02-21T14:38:00",
-      "amount": 864,
+      "amount": 306,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -1945,19 +2022,19 @@
       "person": null
     },
     {
-      "ts": "2026-02-22T12:06:00",
-      "amount": 833,
+      "ts": "2026-02-21T15:06:00",
+      "amount": 5222,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
+      "category": "Рестораны",
+      "merchant": "ресторан у моста",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-02-22T12:12:00",
-      "amount": 3626,
+      "amount": 6000,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -1967,30 +2044,30 @@
       "person": null
     },
     {
-      "ts": "2026-02-22T12:41:00",
-      "amount": 5991,
+      "ts": "2026-02-22T14:06:00",
+      "amount": 3596,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "перекрёсток",
+      "category": "Рестораны",
+      "merchant": "суши-бар",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-02-22T20:51:00",
-      "amount": 2419,
+      "ts": "2026-02-22T14:41:00",
+      "amount": 879,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "самокат",
+      "category": "Транспорт",
+      "merchant": "метро",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-02-23T09:37:00",
-      "amount": 2893,
+      "amount": 5928,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -2001,7 +2078,7 @@
     },
     {
       "ts": "2026-02-24T09:22:00",
-      "amount": 4884,
+      "amount": 4881,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -2011,41 +2088,30 @@
       "person": null
     },
     {
-      "ts": "2026-02-24T14:08:00",
-      "amount": 7768,
+      "ts": "2026-02-24T11:35:00",
+      "amount": 2494,
       "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Одежда",
+      "account": "Личная карта жены",
+      "category": "Подарки",
       "merchant": null,
       "comment": null,
-      "scope": "husband",
-      "person": "husband"
+      "scope": "wife",
+      "person": "wife"
     },
     {
       "ts": "2026-02-24T17:15:00",
-      "amount": 521,
+      "amount": 5360,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
+      "category": "Рестораны",
+      "merchant": "ресторан у моста",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-02-25T19:27:00",
-      "amount": 6906,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Здоровье",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
       "ts": "2026-02-26T11:36:00",
-      "amount": 900,
+      "amount": 899,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2055,23 +2121,12 @@
       "person": null
     },
     {
-      "ts": "2026-02-26T17:51:00",
-      "amount": 3825,
+      "ts": "2026-02-26T20:35:00",
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "вв",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-02-27T15:11:00",
-      "amount": 5976,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "вкусвилл",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
       "comment": null,
       "scope": "common",
       "person": null
@@ -2089,7 +2144,7 @@
     },
     {
       "ts": "2026-03-02T08:59:00",
-      "amount": 900,
+      "amount": 492,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2099,19 +2154,19 @@
       "person": null
     },
     {
-      "ts": "2026-03-02T10:52:00",
-      "amount": 5195,
+      "ts": "2026-03-02T22:26:00",
+      "amount": 3423,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "ашан",
+      "category": "Рестораны",
+      "merchant": "бургерная",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-03-03T07:11:00",
-      "amount": 845,
+      "amount": 343,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2121,19 +2176,30 @@
       "person": null
     },
     {
-      "ts": "2026-03-03T18:16:00",
-      "amount": 6130,
+      "ts": "2026-03-03T11:39:00",
+      "amount": 1139,
       "currency": "RUB",
       "account": "Личная карта жены",
-      "category": "Образование",
+      "category": "Подарки",
       "merchant": null,
       "comment": null,
       "scope": "wife",
       "person": "wife"
     },
     {
+      "ts": "2026-03-03T13:05:00",
+      "amount": 4545,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "пятёрочка",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-03-04T22:29:00",
-      "amount": 900,
+      "amount": 536,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2155,7 +2221,7 @@
     },
     {
       "ts": "2026-03-05T10:00:00",
-      "amount": 132000,
+      "amount": 105600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -2165,41 +2231,19 @@
       "person": "husband"
     },
     {
-      "ts": "2026-03-05T14:32:00",
-      "amount": 5971,
+      "ts": "2026-03-05T10:05:00",
+      "amount": 26400,
       "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "магнит",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-06T14:31:00",
-      "amount": 2678,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Развлечения",
+      "account": "Личная карта мужа",
+      "category": "Зарплата",
       "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
-      "ts": "2026-03-06T17:14:00",
-      "amount": 4486,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "суши-бар",
-      "comment": null,
-      "scope": "common",
-      "person": null
+      "comment": "личная доля",
+      "scope": "husband",
+      "person": "husband"
     },
     {
       "ts": "2026-03-06T17:57:00",
-      "amount": 5972,
+      "amount": 4264,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -2210,39 +2254,6 @@
     },
     {
       "ts": "2026-03-07T10:46:00",
-      "amount": 896,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "азс лукойл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-07T18:07:00",
-      "amount": 328,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "каршеринг",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-07T19:26:00",
-      "amount": 1750,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2026-03-08T16:37:00",
       "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
@@ -2253,26 +2264,70 @@
       "person": null
     },
     {
-      "ts": "2026-03-08T21:16:00",
-      "amount": 6985,
+      "ts": "2026-03-07T14:50:00",
+      "amount": 6751,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
-      "merchant": "ресторан у моста",
+      "merchant": "пиццерия",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-03-09T15:06:00",
-      "amount": 6998,
+      "ts": "2026-03-08T15:34:00",
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "кафе на углу",
+      "category": "Транспорт",
+      "merchant": "метро",
       "comment": null,
       "scope": "common",
       "person": null
+    },
+    {
+      "ts": "2026-03-08T15:45:00",
+      "amount": 6970,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "суши-бар",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-09T13:06:00",
+      "amount": 845,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-09T18:43:00",
+      "amount": 5955,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "пятёрочка",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-09T21:45:00",
+      "amount": 2037,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Подарки",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
     },
     {
       "ts": "2026-03-10T08:00:00",
@@ -2287,7 +2342,7 @@
     },
     {
       "ts": "2026-03-10T13:42:00",
-      "amount": 852,
+      "amount": 886,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2297,30 +2352,8 @@
       "person": null
     },
     {
-      "ts": "2026-03-11T11:42:00",
-      "amount": 898,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "азс лукойл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-11T14:46:00",
-      "amount": 538,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "яндекс.такси",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-11T15:08:00",
-      "amount": 5957,
+      "ts": "2026-03-10T13:52:00",
+      "amount": 5994,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -2330,30 +2363,19 @@
       "person": null
     },
     {
-      "ts": "2026-03-11T18:19:00",
-      "amount": 5693,
+      "ts": "2026-03-10T16:05:00",
+      "amount": 2344,
       "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "вкусвилл",
+      "account": "Личная карта жены",
+      "category": "Одежда",
+      "merchant": null,
       "comment": null,
-      "scope": "common",
-      "person": null
+      "scope": "wife",
+      "person": "wife"
     },
     {
-      "ts": "2026-03-12T20:15:00",
-      "amount": 900,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-13T23:33:00",
-      "amount": 649,
+      "ts": "2026-03-11T14:46:00",
+      "amount": 898,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2363,23 +2385,78 @@
       "person": null
     },
     {
-      "ts": "2026-03-14T17:48:00",
-      "amount": 6000,
+      "ts": "2026-03-11T17:40:00",
+      "amount": 3303,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "пятёрочка",
+      "merchant": "самокат",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-03-14T21:40:00",
-      "amount": 5978,
+      "ts": "2026-03-12T10:46:00",
+      "amount": 828,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "каршеринг",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-12T20:15:00",
+      "amount": 899,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "метро",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-13T13:12:00",
+      "amount": 6981,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "ресторан у моста",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-13T23:33:00",
+      "amount": 361,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-14T09:06:00",
+      "amount": 1545,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
       "merchant": "ашан",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-14T17:48:00",
+      "amount": 5833,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "пятёрочка",
       "comment": null,
       "scope": "common",
       "person": null
@@ -2397,18 +2474,18 @@
     },
     {
       "ts": "2026-03-15T16:05:00",
-      "amount": 2473,
+      "amount": 1736,
       "currency": "RUB",
-      "account": "Личная карта жены",
+      "account": "Личная карта мужа",
       "category": "Подарки",
       "merchant": null,
       "comment": null,
-      "scope": "wife",
-      "person": "wife"
+      "scope": "husband",
+      "person": "husband"
     },
     {
       "ts": "2026-03-15T17:07:00",
-      "amount": 715,
+      "amount": 649,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2418,128 +2495,62 @@
       "person": null
     },
     {
-      "ts": "2026-03-15T21:21:00",
-      "amount": 6000,
+      "ts": "2026-03-15T18:28:00",
+      "amount": 5990,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "магнит",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-15T22:10:00",
-      "amount": 6792,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "суши-бар",
+      "merchant": "самокат",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-03-16T12:32:00",
-      "amount": 9762,
+      "amount": 5381,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Подарки",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-03-16T16:24:00",
+      "amount": 3801,
       "currency": "RUB",
       "account": "Личная карта жены",
-      "category": "Подарки",
+      "category": "Одежда",
       "merchant": null,
       "comment": null,
       "scope": "wife",
       "person": "wife"
     },
     {
-      "ts": "2026-03-16T15:04:00",
-      "amount": 6813,
+      "ts": "2026-03-17T11:12:00",
+      "amount": 900,
       "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Здоровье",
-      "merchant": null,
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
       "comment": null,
-      "scope": "husband",
-      "person": "husband"
+      "scope": "common",
+      "person": null
     },
     {
-      "ts": "2026-03-16T20:51:00",
-      "amount": 2920,
+      "ts": "2026-03-17T18:16:00",
+      "amount": 4801,
       "currency": "RUB",
-      "account": "Личная карта мужа",
+      "account": "Личная карта жены",
       "category": "Развлечения",
       "merchant": null,
       "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2026-03-19T08:33:00",
-      "amount": 898,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-19T12:21:00",
-      "amount": 468,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "азс лукойл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-19T16:32:00",
-      "amount": 5998,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "самокат",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-20T10:00:00",
-      "amount": 96000,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Зарплата",
-      "merchant": null,
-      "comment": null,
-      "scope": "common",
+      "scope": "wife",
       "person": "wife"
     },
     {
-      "ts": "2026-03-20T18:24:00",
-      "amount": 6994,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "бургерная",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-20T19:12:00",
-      "amount": 5970,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "самокат",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-22T10:23:00",
+      "ts": "2026-03-19T12:21:00",
       "amount": 699,
       "currency": "RUB",
       "account": "Основная карта",
@@ -2550,8 +2561,96 @@
       "person": null
     },
     {
-      "ts": "2026-03-22T17:15:00",
-      "amount": 781,
+      "ts": "2026-03-20T09:55:00",
+      "amount": 1984,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-20T10:00:00",
+      "amount": 76800,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": null,
+      "scope": "common",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-03-20T10:05:00",
+      "amount": 19200,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-03-20T19:42:00",
+      "amount": 6000,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "пятёрочка",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-21T07:20:00",
+      "amount": 900,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "метро",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-21T12:33:00",
+      "amount": 5816,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вв",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-21T14:59:00",
+      "amount": 5739,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "самокат",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-21T19:41:00",
+      "amount": 1618,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Здоровье",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-03-22T15:36:00",
+      "amount": 538,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2561,8 +2660,52 @@
       "person": null
     },
     {
+      "ts": "2026-03-22T17:15:00",
+      "amount": 715,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-22T18:07:00",
+      "amount": 5305,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-22T21:19:00",
+      "amount": 2576,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "самокат",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-22T21:38:00",
+      "amount": 3174,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "бургерная",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-03-24T15:29:00",
-      "amount": 795,
+      "amount": 852,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2573,7 +2716,7 @@
     },
     {
       "ts": "2026-03-24T20:38:00",
-      "amount": 898,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2584,7 +2727,7 @@
     },
     {
       "ts": "2026-03-25T11:07:00",
-      "amount": 900,
+      "amount": 845,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2594,8 +2737,19 @@
       "person": null
     },
     {
+      "ts": "2026-03-25T21:57:00",
+      "amount": 6997,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
       "ts": "2026-03-26T08:51:00",
-      "amount": 361,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2605,8 +2759,41 @@
       "person": null
     },
     {
-      "ts": "2026-03-27T09:55:00",
-      "amount": 5999,
+      "ts": "2026-03-26T14:26:00",
+      "amount": 5997,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "перекрёсток",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-26T19:55:00",
+      "amount": 5973,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вв",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-26T20:18:00",
+      "amount": 5994,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "перекрёсток",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-27T16:51:00",
+      "amount": 2509,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -2616,30 +2803,8 @@
       "person": null
     },
     {
-      "ts": "2026-03-27T16:29:00",
-      "amount": 5998,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "ашан",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-28T09:04:00",
-      "amount": 535,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "азс лукойл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-03-28T18:48:00",
-      "amount": 492,
+      "amount": 328,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2649,8 +2814,19 @@
       "person": null
     },
     {
+      "ts": "2026-03-28T19:10:00",
+      "amount": 2463,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "пиццерия",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-03-28T22:35:00",
-      "amount": 900,
+      "amount": 886,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2661,7 +2837,7 @@
     },
     {
       "ts": "2026-03-28T23:25:00",
-      "amount": 343,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2671,8 +2847,30 @@
       "person": null
     },
     {
-      "ts": "2026-03-29T14:58:00",
-      "amount": 3174,
+      "ts": "2026-03-29T16:34:00",
+      "amount": 6918,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "бургерная",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-30T16:28:00",
+      "amount": 900,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "метро",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-03-31T18:30:00",
+      "amount": 3811,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -2682,129 +2880,19 @@
       "person": null
     },
     {
-      "ts": "2026-03-29T15:54:00",
-      "amount": 9923,
+      "ts": "2026-04-01T11:25:00",
+      "amount": 4081,
       "currency": "RUB",
       "account": "Личная карта мужа",
-      "category": "Развлечения",
+      "category": "Образование",
       "merchant": null,
       "comment": null,
       "scope": "husband",
       "person": "husband"
-    },
-    {
-      "ts": "2026-03-29T19:41:00",
-      "amount": 2236,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Здоровье",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2026-03-31T09:02:00",
-      "amount": 828,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "яндекс.такси",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-31T15:43:00",
-      "amount": 3811,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "ресторан у моста",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-31T16:39:00",
-      "amount": 5954,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "магнит",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-31T19:07:00",
-      "amount": 5999,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "ашан",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-03-31T21:45:00",
-      "amount": 3075,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Подарки",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
-      "ts": "2026-04-02T12:39:00",
-      "amount": 6407,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "ресторан у моста",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-03T07:00:00",
-      "amount": 887,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-03T08:45:00",
-      "amount": 815,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "яндекс.такси",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-03T14:47:00",
-      "amount": 5876,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Подарки",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
     },
     {
       "ts": "2026-04-04T07:13:00",
-      "amount": 325,
+      "amount": 629,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2814,12 +2902,23 @@
       "person": null
     },
     {
-      "ts": "2026-04-04T17:07:00",
-      "amount": 324,
+      "ts": "2026-04-04T10:40:00",
+      "amount": 348,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
-      "merchant": "яндекс.такси",
+      "merchant": "азс лукойл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-04T20:03:00",
+      "amount": 6977,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "бургерная",
       "comment": null,
       "scope": "common",
       "person": null
@@ -2836,19 +2935,8 @@
       "person": null
     },
     {
-      "ts": "2026-04-05T09:50:00",
-      "amount": 9407,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Одежда",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
       "ts": "2026-04-05T10:00:00",
-      "amount": 132000,
+      "amount": 105600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -2858,8 +2946,30 @@
       "person": "husband"
     },
     {
+      "ts": "2026-04-05T10:05:00",
+      "amount": 26400,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-04-05T11:33:00",
+      "amount": 5808,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-04-05T11:42:00",
-      "amount": 725,
+      "amount": 403,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2869,19 +2979,30 @@
       "person": null
     },
     {
-      "ts": "2026-04-07T15:09:00",
-      "amount": 10307,
+      "ts": "2026-04-05T11:43:00",
+      "amount": 891,
       "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Одежда",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-05T16:11:00",
+      "amount": 1307,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Развлечения",
       "merchant": null,
       "comment": null,
-      "scope": "husband",
-      "person": "husband"
+      "scope": "wife",
+      "person": "wife"
     },
     {
       "ts": "2026-04-07T16:04:00",
-      "amount": 5865,
+      "amount": 5958,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -2892,7 +3013,7 @@
     },
     {
       "ts": "2026-04-07T16:45:00",
-      "amount": 6000,
+      "amount": 5988,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -2903,7 +3024,7 @@
     },
     {
       "ts": "2026-04-07T20:09:00",
-      "amount": 896,
+      "amount": 664,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2914,7 +3035,7 @@
     },
     {
       "ts": "2026-04-08T16:47:00",
-      "amount": 882,
+      "amount": 735,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2925,40 +3046,7 @@
     },
     {
       "ts": "2026-04-08T17:45:00",
-      "amount": 3694,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "кафе на углу",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-08T20:33:00",
-      "amount": 3400,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "бургерная",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-08T23:09:00",
-      "amount": 548,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "азс лукойл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-09T23:12:00",
-      "amount": 569,
+      "amount": 706,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -2980,7 +3068,7 @@
     },
     {
       "ts": "2026-04-10T21:35:00",
-      "amount": 6000,
+      "amount": 5977,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -2991,7 +3079,7 @@
     },
     {
       "ts": "2026-04-11T08:19:00",
-      "amount": 485,
+      "amount": 324,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3001,19 +3089,8 @@
       "person": null
     },
     {
-      "ts": "2026-04-11T14:10:00",
-      "amount": 3694,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "бургерная",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-11T18:56:00",
-      "amount": 846,
+      "ts": "2026-04-11T09:01:00",
+      "amount": 812,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3023,19 +3100,30 @@
       "person": null
     },
     {
-      "ts": "2026-04-12T11:54:00",
-      "amount": 8536,
+      "ts": "2026-04-11T11:10:00",
+      "amount": 449,
       "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Одежда",
-      "merchant": null,
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "каршеринг",
       "comment": null,
-      "scope": "wife",
-      "person": "wife"
+      "scope": "common",
+      "person": null
     },
     {
-      "ts": "2026-04-13T13:45:00",
-      "amount": 4139,
+      "ts": "2026-04-11T18:56:00",
+      "amount": 719,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-12T12:34:00",
+      "amount": 4434,
       "currency": "RUB",
       "account": "Личная карта жены",
       "category": "Подарки",
@@ -3046,7 +3134,7 @@
     },
     {
       "ts": "2026-04-13T17:40:00",
-      "amount": 565,
+      "amount": 897,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3056,30 +3144,8 @@
       "person": null
     },
     {
-      "ts": "2026-04-13T18:21:00",
-      "amount": 590,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-13T19:00:00",
-      "amount": 1380,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Одежда",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
       "ts": "2026-04-13T19:17:00",
-      "amount": 6000,
+      "amount": 2418,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3089,19 +3155,8 @@
       "person": null
     },
     {
-      "ts": "2026-04-13T19:29:00",
-      "amount": 9794,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Здоровье",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
       "ts": "2026-04-13T20:56:00",
-      "amount": 361,
+      "amount": 898,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3112,44 +3167,33 @@
     },
     {
       "ts": "2026-04-13T20:56:00",
-      "amount": 812,
+      "amount": 388,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
       "merchant": "метро",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-14T10:07:00",
+      "amount": 830,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-04-14T13:15:00",
-      "amount": 6000,
+      "amount": 5981,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
       "merchant": "вкусвилл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-14T17:59:00",
-      "amount": 6000,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "пятёрочка",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-14T20:44:00",
-      "amount": 374,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "яндекс.такси",
       "comment": null,
       "scope": "common",
       "person": null
@@ -3166,19 +3210,8 @@
       "person": "wife"
     },
     {
-      "ts": "2026-04-15T09:05:00",
-      "amount": 11975,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Здоровье",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
       "ts": "2026-04-15T12:56:00",
-      "amount": 706,
+      "amount": 736,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3188,107 +3221,8 @@
       "person": null
     },
     {
-      "ts": "2026-04-16T12:59:00",
-      "amount": 719,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-17T12:43:00",
-      "amount": 5994,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "ашан",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-17T18:58:00",
-      "amount": 714,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "азс лукойл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-18T07:57:00",
-      "amount": 643,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-18T10:09:00",
-      "amount": 11310,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Одежда",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
-      "ts": "2026-04-18T12:55:00",
-      "amount": 6000,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "ашан",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-20T10:00:00",
-      "amount": 96000,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Зарплата",
-      "merchant": null,
-      "comment": null,
-      "scope": "common",
-      "person": "wife"
-    },
-    {
-      "ts": "2026-04-20T12:36:00",
-      "amount": 5785,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "вкусвилл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-20T14:08:00",
-      "amount": 3170,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "магнит",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-21T17:38:00",
-      "amount": 884,
+      "ts": "2026-04-17T09:03:00",
+      "amount": 725,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3298,63 +3232,41 @@
       "person": null
     },
     {
-      "ts": "2026-04-22T16:08:00",
-      "amount": 466,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-22T20:33:00",
-      "amount": 5999,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "перекрёсток",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-22T21:35:00",
-      "amount": 5333,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "суши-бар",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-04-23T16:33:00",
-      "amount": 11781,
+      "ts": "2026-04-17T09:40:00",
+      "amount": 5418,
       "currency": "RUB",
       "account": "Личная карта мужа",
-      "category": "Развлечения",
+      "category": "Подарки",
       "merchant": null,
       "comment": null,
       "scope": "husband",
       "person": "husband"
     },
     {
-      "ts": "2026-04-23T21:13:00",
-      "amount": 2519,
+      "ts": "2026-04-17T11:18:00",
+      "amount": 399,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "бургерная",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-04-24T08:53:00",
-      "amount": 623,
+      "ts": "2026-04-17T12:43:00",
+      "amount": 1915,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "ашан",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-17T13:07:00",
+      "amount": 846,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3364,8 +3276,41 @@
       "person": null
     },
     {
-      "ts": "2026-04-24T17:48:00",
-      "amount": 3060,
+      "ts": "2026-04-17T18:21:00",
+      "amount": 6896,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "пиццерия",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-18T07:57:00",
+      "amount": 348,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-18T12:55:00",
+      "amount": 5998,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "ашан",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-18T15:02:00",
+      "amount": 6844,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -3375,19 +3320,63 @@
       "person": null
     },
     {
-      "ts": "2026-04-25T19:41:00",
-      "amount": 8823,
+      "ts": "2026-04-20T09:24:00",
+      "amount": 618,
       "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Подарки",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-20T10:00:00",
+      "amount": 76800,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Зарплата",
       "merchant": null,
       "comment": null,
+      "scope": "common",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-04-20T10:05:00",
+      "amount": 19200,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
       "scope": "wife",
       "person": "wife"
     },
     {
-      "ts": "2026-04-25T20:09:00",
-      "amount": 4549,
+      "ts": "2026-04-20T12:36:00",
+      "amount": 5200,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-20T20:14:00",
+      "amount": 6324,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "ресторан у моста",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-22T19:33:00",
+      "amount": 6967,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -3397,8 +3386,63 @@
       "person": null
     },
     {
+      "ts": "2026-04-22T19:51:00",
+      "amount": 5988,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-22T20:33:00",
+      "amount": 3245,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "перекрёсток",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-23T13:26:00",
+      "amount": 422,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-24T08:53:00",
+      "amount": 690,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "каршеринг",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-24T18:48:00",
+      "amount": 690,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-04-27T11:35:00",
-      "amount": 5999,
+      "amount": 5889,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3409,7 +3453,7 @@
     },
     {
       "ts": "2026-04-27T23:37:00",
-      "amount": 403,
+      "amount": 623,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3419,8 +3463,63 @@
       "person": null
     },
     {
+      "ts": "2026-04-28T15:19:00",
+      "amount": 3938,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-04-28T19:00:00",
+      "amount": 1190,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-04-30T12:48:00",
+      "amount": 1663,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-04-30T14:31:00",
+      "amount": 5360,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "перекрёсток",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-04-30T21:15:00",
+      "amount": 5935,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "перекрёсток",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-05-01T13:34:00",
-      "amount": 6000,
+      "amount": 5999,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3431,7 +3530,7 @@
     },
     {
       "ts": "2026-05-01T18:54:00",
-      "amount": 6000,
+      "amount": 5757,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3442,7 +3541,7 @@
     },
     {
       "ts": "2026-05-01T20:34:00",
-      "amount": 6000,
+      "amount": 4454,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3464,7 +3563,7 @@
     },
     {
       "ts": "2026-05-02T12:14:00",
-      "amount": 11925,
+      "amount": 6462,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Образование",
@@ -3475,7 +3574,7 @@
     },
     {
       "ts": "2026-05-02T18:56:00",
-      "amount": 5999,
+      "amount": 6000,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3486,7 +3585,7 @@
     },
     {
       "ts": "2026-05-02T20:00:00",
-      "amount": 3480,
+      "amount": 3929,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -3497,7 +3596,7 @@
     },
     {
       "ts": "2026-05-03T08:39:00",
-      "amount": 696,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3518,19 +3617,19 @@
       "person": null
     },
     {
-      "ts": "2026-05-04T17:59:00",
-      "amount": 899,
+      "ts": "2026-05-04T14:59:00",
+      "amount": 2808,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
+      "category": "Продукты",
+      "merchant": "магнит",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-05-04T21:27:00",
-      "amount": 455,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3552,13 +3651,24 @@
     },
     {
       "ts": "2026-05-05T10:00:00",
-      "amount": 132000,
+      "amount": 105600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
       "merchant": null,
       "comment": null,
       "scope": "common",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-05-05T10:05:00",
+      "amount": 26400,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "husband",
       "person": "husband"
     },
     {
@@ -3574,7 +3684,7 @@
     },
     {
       "ts": "2026-05-06T12:11:00",
-      "amount": 6000,
+      "amount": 5314,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3584,30 +3694,19 @@
       "person": null
     },
     {
-      "ts": "2026-05-06T12:57:00",
-      "amount": 4416,
+      "ts": "2026-05-06T15:25:00",
+      "amount": 900,
       "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Образование",
-      "merchant": null,
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
       "comment": null,
-      "scope": "husband",
-      "person": "husband"
+      "scope": "common",
+      "person": null
     },
     {
-      "ts": "2026-05-06T22:42:00",
-      "amount": 7599,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Развлечения",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2026-05-07T11:38:00",
-      "amount": 6305,
+      "ts": "2026-05-07T16:56:00",
+      "amount": 4290,
       "currency": "RUB",
       "account": "Личная карта жены",
       "category": "Подарки",
@@ -3618,7 +3717,7 @@
     },
     {
       "ts": "2026-05-08T12:11:00",
-      "amount": 3488,
+      "amount": 3574,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3640,7 +3739,7 @@
     },
     {
       "ts": "2026-05-08T22:06:00",
-      "amount": 898,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3651,22 +3750,11 @@
     },
     {
       "ts": "2026-05-08T23:59:00",
-      "amount": 351,
+      "amount": 890,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
       "merchant": "метро",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-05-09T19:07:00",
-      "amount": 874,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
       "comment": null,
       "scope": "common",
       "person": null
@@ -3683,6 +3771,17 @@
       "person": null
     },
     {
+      "ts": "2026-05-10T11:32:00",
+      "amount": 6420,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Подарки",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
       "ts": "2026-05-10T20:13:00",
       "amount": 900,
       "currency": "RUB",
@@ -3692,17 +3791,6 @@
       "comment": null,
       "scope": "common",
       "person": null
-    },
-    {
-      "ts": "2026-05-11T10:58:00",
-      "amount": 8606,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Развлечения",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
     },
     {
       "ts": "2026-05-11T13:20:00",
@@ -3717,7 +3805,7 @@
     },
     {
       "ts": "2026-05-11T13:23:00",
-      "amount": 586,
+      "amount": 854,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3728,7 +3816,7 @@
     },
     {
       "ts": "2026-05-11T15:19:00",
-      "amount": 854,
+      "amount": 455,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3739,7 +3827,7 @@
     },
     {
       "ts": "2026-05-13T20:57:00",
-      "amount": 9603,
+      "amount": 5301,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Образование",
@@ -3761,7 +3849,7 @@
     },
     {
       "ts": "2026-05-14T13:39:00",
-      "amount": 415,
+      "amount": 899,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3783,7 +3871,7 @@
     },
     {
       "ts": "2026-05-14T22:33:00",
-      "amount": 574,
+      "amount": 660,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3805,7 +3893,7 @@
     },
     {
       "ts": "2026-05-15T14:59:00",
-      "amount": 6000,
+      "amount": 2817,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3815,8 +3903,19 @@
       "person": null
     },
     {
+      "ts": "2026-05-15T18:41:00",
+      "amount": 1674,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Развлечения",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
       "ts": "2026-05-16T08:48:00",
-      "amount": 869,
+      "amount": 566,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3837,19 +3936,8 @@
       "person": null
     },
     {
-      "ts": "2026-05-16T13:29:00",
-      "amount": 4623,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
       "ts": "2026-05-16T14:11:00",
-      "amount": 899,
+      "amount": 753,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3859,19 +3947,19 @@
       "person": null
     },
     {
-      "ts": "2026-05-16T19:51:00",
-      "amount": 859,
+      "ts": "2026-05-16T22:47:00",
+      "amount": 7001,
       "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
+      "account": "Личная карта мужа",
+      "category": "Образование",
+      "merchant": null,
       "comment": null,
-      "scope": "common",
-      "person": null
+      "scope": "husband",
+      "person": "husband"
     },
     {
       "ts": "2026-05-18T12:40:00",
-      "amount": 4454,
+      "amount": 3488,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3882,11 +3970,22 @@
     },
     {
       "ts": "2026-05-18T21:21:00",
-      "amount": 4385,
+      "amount": 5411,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
       "merchant": "вв",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-05-18T22:41:00",
+      "amount": 900,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
       "comment": null,
       "scope": "common",
       "person": null
@@ -3903,25 +4002,36 @@
       "person": null
     },
     {
-      "ts": "2026-05-19T19:25:00",
-      "amount": 11401,
+      "ts": "2026-05-19T21:15:00",
+      "amount": 6000,
       "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Здоровье",
-      "merchant": null,
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вв",
       "comment": null,
-      "scope": "wife",
-      "person": "wife"
+      "scope": "common",
+      "person": null
     },
     {
       "ts": "2026-05-20T10:00:00",
-      "amount": 96000,
+      "amount": 76800,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
       "merchant": null,
       "comment": null,
       "scope": "common",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-05-20T10:05:00",
+      "amount": 19200,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "wife",
       "person": "wife"
     },
     {
@@ -3937,7 +4047,7 @@
     },
     {
       "ts": "2026-05-21T10:01:00",
-      "amount": 900,
+      "amount": 493,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -3947,19 +4057,8 @@
       "person": null
     },
     {
-      "ts": "2026-05-21T16:03:00",
-      "amount": 6730,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
       "ts": "2026-05-21T17:14:00",
-      "amount": 5908,
+      "amount": 5146,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3970,7 +4069,7 @@
     },
     {
       "ts": "2026-05-21T21:15:00",
-      "amount": 6000,
+      "amount": 4241,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -3980,19 +4079,8 @@
       "person": null
     },
     {
-      "ts": "2026-05-23T12:58:00",
-      "amount": 845,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "азс лукойл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-05-23T16:01:00",
-      "amount": 3772,
+      "ts": "2026-05-23T12:13:00",
+      "amount": 2999,
       "currency": "RUB",
       "account": "Личная карта жены",
       "category": "Развлечения",
@@ -4002,8 +4090,19 @@
       "person": "wife"
     },
     {
+      "ts": "2026-05-23T12:58:00",
+      "amount": 488,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-05-24T17:06:00",
-      "amount": 6000,
+      "amount": 5908,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -4013,19 +4112,8 @@
       "person": null
     },
     {
-      "ts": "2026-05-25T14:27:00",
-      "amount": 882,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-05-25T15:46:00",
-      "amount": 434,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4047,7 +4135,7 @@
     },
     {
       "ts": "2026-05-26T11:56:00",
-      "amount": 710,
+      "amount": 775,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4069,7 +4157,7 @@
     },
     {
       "ts": "2026-05-26T14:02:00",
-      "amount": 660,
+      "amount": 434,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4077,17 +4165,6 @@
       "comment": null,
       "scope": "common",
       "person": null
-    },
-    {
-      "ts": "2026-05-26T16:12:00",
-      "amount": 5281,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Подарки",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
     },
     {
       "ts": "2026-05-26T19:38:00",
@@ -4102,7 +4179,7 @@
     },
     {
       "ts": "2026-05-27T10:34:00",
-      "amount": 2808,
+      "amount": 3069,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -4112,8 +4189,30 @@
       "person": null
     },
     {
+      "ts": "2026-05-27T16:11:00",
+      "amount": 3325,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Здоровье",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-05-27T19:51:00",
+      "amount": 765,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "метро",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-05-28T11:11:00",
-      "amount": 2103,
+      "amount": 1551,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Образование",
@@ -4124,7 +4223,7 @@
     },
     {
       "ts": "2026-05-29T13:14:00",
-      "amount": 464,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4145,8 +4244,19 @@
       "person": null
     },
     {
+      "ts": "2026-05-30T16:36:00",
+      "amount": 4677,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Здоровье",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
       "ts": "2026-06-01T15:47:00",
-      "amount": 663,
+      "amount": 330,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4156,8 +4266,41 @@
       "person": null
     },
     {
+      "ts": "2026-06-02T22:27:00",
+      "amount": 311,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "каршеринг",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-03T13:49:00",
+      "amount": 3914,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вв",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-03T19:46:00",
+      "amount": 4078,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-06-04T16:13:00",
-      "amount": 827,
+      "amount": 770,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4165,17 +4308,6 @@
       "comment": null,
       "scope": "common",
       "person": null
-    },
-    {
-      "ts": "2026-06-04T18:04:00",
-      "amount": 8317,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Развлечения",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
     },
     {
       "ts": "2026-06-05T08:00:00",
@@ -4189,19 +4321,8 @@
       "person": null
     },
     {
-      "ts": "2026-06-05T09:23:00",
-      "amount": 9645,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
       "ts": "2026-06-05T10:00:00",
-      "amount": 132000,
+      "amount": 105600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -4211,8 +4332,19 @@
       "person": "husband"
     },
     {
+      "ts": "2026-06-05T10:05:00",
+      "amount": 26400,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
       "ts": "2026-06-05T10:23:00",
-      "amount": 375,
+      "amount": 899,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4223,7 +4355,7 @@
     },
     {
       "ts": "2026-06-05T11:00:00",
-      "amount": 456,
+      "amount": 375,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4233,19 +4365,30 @@
       "person": null
     },
     {
-      "ts": "2026-06-05T19:27:00",
-      "amount": 5967,
+      "ts": "2026-06-05T11:07:00",
+      "amount": 4091,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Образование",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-06-06T09:09:00",
+      "amount": 5988,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "вв",
+      "merchant": "магнит",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-06-06T12:44:00",
-      "amount": 6955,
+      "amount": 6808,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -4256,7 +4399,7 @@
     },
     {
       "ts": "2026-06-07T08:51:00",
-      "amount": 900,
+      "amount": 898,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4266,30 +4409,30 @@
       "person": null
     },
     {
-      "ts": "2026-06-08T10:04:00",
-      "amount": 5969,
+      "ts": "2026-06-08T16:22:00",
+      "amount": 5513,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "магнит",
+      "merchant": "ашан",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-06-08T20:43:00",
-      "amount": 1310,
+      "ts": "2026-06-08T21:41:00",
+      "amount": 795,
       "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Развлечения",
-      "merchant": null,
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "метро",
       "comment": null,
-      "scope": "wife",
-      "person": "wife"
+      "scope": "common",
+      "person": null
     },
     {
       "ts": "2026-06-09T18:19:00",
-      "amount": 900,
+      "amount": 832,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4310,8 +4453,19 @@
       "person": null
     },
     {
+      "ts": "2026-06-10T10:15:00",
+      "amount": 3445,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Подарки",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
       "ts": "2026-06-11T15:58:00",
-      "amount": 6880,
+      "amount": 6740,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -4321,22 +4475,22 @@
       "person": null
     },
     {
-      "ts": "2026-06-11T18:45:00",
+      "ts": "2026-06-12T09:21:00",
       "amount": 6000,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "магнит",
+      "merchant": "самокат",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-06-11T22:37:00",
-      "amount": 7262,
+      "ts": "2026-06-12T19:08:00",
+      "amount": 4026,
       "currency": "RUB",
       "account": "Личная карта жены",
-      "category": "Развлечения",
+      "category": "Одежда",
       "merchant": null,
       "comment": null,
       "scope": "wife",
@@ -4344,7 +4498,7 @@
     },
     {
       "ts": "2026-06-13T10:53:00",
-      "amount": 404,
+      "amount": 305,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4355,7 +4509,7 @@
     },
     {
       "ts": "2026-06-13T23:21:00",
-      "amount": 900,
+      "amount": 460,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4365,23 +4519,34 @@
       "person": null
     },
     {
-      "ts": "2026-06-14T11:38:00",
-      "amount": 6000,
+      "ts": "2026-06-14T16:48:00",
+      "amount": 2427,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "вкусвилл",
+      "merchant": "пятёрочка",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-06-14T20:20:00",
-      "amount": 6924,
+      "amount": 5972,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
       "merchant": "кафе на углу",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-14T22:02:00",
+      "amount": 6844,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "бургерная",
       "comment": null,
       "scope": "common",
       "person": null
@@ -4399,7 +4564,7 @@
     },
     {
       "ts": "2026-06-15T11:55:00",
-      "amount": 547,
+      "amount": 456,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4409,30 +4574,41 @@
       "person": null
     },
     {
-      "ts": "2026-06-15T19:10:00",
-      "amount": 5815,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "пятёрочка",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-06-15T19:15:00",
-      "amount": 4747,
+      "ts": "2026-06-15T16:06:00",
+      "amount": 1317,
       "currency": "RUB",
       "account": "Личная карта мужа",
-      "category": "Одежда",
+      "category": "Развлечения",
       "merchant": null,
       "comment": null,
       "scope": "husband",
       "person": "husband"
     },
     {
+      "ts": "2026-06-16T11:26:00",
+      "amount": 6000,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "перекрёсток",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-16T18:55:00",
+      "amount": 5806,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-06-16T22:56:00",
-      "amount": 900,
+      "amount": 330,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4443,7 +4619,7 @@
     },
     {
       "ts": "2026-06-17T18:36:00",
-      "amount": 900,
+      "amount": 592,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4453,19 +4629,8 @@
       "person": null
     },
     {
-      "ts": "2026-06-18T21:22:00",
-      "amount": 5983,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "пятёрочка",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-06-19T14:49:00",
-      "amount": 672,
+      "amount": 827,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4476,7 +4641,7 @@
     },
     {
       "ts": "2026-06-20T10:00:00",
-      "amount": 96000,
+      "amount": 76800,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -4486,8 +4651,19 @@
       "person": "wife"
     },
     {
-      "ts": "2026-06-20T10:14:00",
-      "amount": 6000,
+      "ts": "2026-06-20T10:05:00",
+      "amount": 19200,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-06-20T13:45:00",
+      "amount": 5303,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -4498,7 +4674,7 @@
     },
     {
       "ts": "2026-06-21T08:37:00",
-      "amount": 861,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4508,73 +4684,29 @@
       "person": null
     },
     {
-      "ts": "2026-06-21T23:08:00",
-      "amount": 760,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "яндекс.такси",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-06-22T13:11:00",
-      "amount": 6437,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "ресторан у моста",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-06-22T21:43:00",
-      "amount": 778,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "каршеринг",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-06-23T19:49:00",
-      "amount": 5998,
+      "ts": "2026-06-21T14:50:00",
+      "amount": 5922,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "ашан",
+      "merchant": "пятёрочка",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-06-24T13:30:00",
-      "amount": 5989,
+      "ts": "2026-06-21T15:53:00",
+      "amount": 4714,
       "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "перекрёсток",
+      "account": "Личная карта жены",
+      "category": "Здоровье",
+      "merchant": null,
       "comment": null,
-      "scope": "common",
-      "person": null
+      "scope": "wife",
+      "person": "wife"
     },
     {
-      "ts": "2026-06-25T09:41:00",
-      "amount": 2303,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "магнит",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-06-26T09:11:00",
+      "ts": "2026-06-21T20:38:00",
       "amount": 6000,
       "currency": "RUB",
       "account": "Основная карта",
@@ -4585,8 +4717,8 @@
       "person": null
     },
     {
-      "ts": "2026-06-26T12:34:00",
-      "amount": 770,
+      "ts": "2026-06-21T23:08:00",
+      "amount": 898,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4596,8 +4728,85 @@
       "person": null
     },
     {
-      "ts": "2026-06-27T13:02:00",
-      "amount": 8595,
+      "ts": "2026-06-22T10:11:00",
+      "amount": 306,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-22T13:35:00",
+      "amount": 3723,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "ашан",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-22T21:43:00",
+      "amount": 859,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "каршеринг",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-23T19:14:00",
+      "amount": 6000,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "пятёрочка",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-24T14:29:00",
+      "amount": 1269,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-06-25T21:52:00",
+      "amount": 3462,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вв",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-26T12:34:00",
+      "amount": 526,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-06-26T21:55:00",
+      "amount": 2213,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Здоровье",
@@ -4607,19 +4816,8 @@
       "person": "husband"
     },
     {
-      "ts": "2026-06-27T15:31:00",
-      "amount": 5985,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "самокат",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-06-27T19:49:00",
-      "amount": 311,
+      "amount": 632,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4630,7 +4828,7 @@
     },
     {
       "ts": "2026-06-27T20:58:00",
-      "amount": 381,
+      "amount": 547,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4640,19 +4838,8 @@
       "person": null
     },
     {
-      "ts": "2026-06-28T13:40:00",
-      "amount": 4043,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "вкусвилл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-06-28T18:09:00",
-      "amount": 899,
+      "amount": 760,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4673,30 +4860,8 @@
       "person": null
     },
     {
-      "ts": "2026-06-29T11:47:00",
-      "amount": 8501,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Одежда",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2026-06-29T14:29:00",
-      "amount": 1538,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Одежда",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
       "ts": "2026-06-29T19:48:00",
-      "amount": 900,
+      "amount": 379,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4706,8 +4871,8 @@
       "person": null
     },
     {
-      "ts": "2026-06-29T21:15:00",
-      "amount": 8397,
+      "ts": "2026-06-29T21:28:00",
+      "amount": 6901,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Здоровье",
@@ -4718,22 +4883,11 @@
     },
     {
       "ts": "2026-06-29T21:34:00",
-      "amount": 6998,
+      "amount": 6920,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
       "merchant": "бургерная",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-06-29T22:27:00",
-      "amount": 305,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "каршеринг",
       "comment": null,
       "scope": "common",
       "person": null
@@ -4750,19 +4904,8 @@
       "person": null
     },
     {
-      "ts": "2026-06-30T21:39:00",
-      "amount": 3384,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Подарки",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
       "ts": "2026-07-01T13:01:00",
-      "amount": 5345,
+      "amount": 3871,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -4773,7 +4916,7 @@
     },
     {
       "ts": "2026-07-01T16:57:00",
-      "amount": 470,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4784,7 +4927,7 @@
     },
     {
       "ts": "2026-07-02T21:56:00",
-      "amount": 633,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4805,52 +4948,30 @@
       "person": null
     },
     {
-      "ts": "2026-07-03T17:40:00",
-      "amount": 10487,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Подарки",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2026-07-04T17:25:00",
-      "amount": 6953,
+      "ts": "2026-07-04T15:06:00",
+      "amount": 6000,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "пиццерия",
+      "category": "Продукты",
+      "merchant": "пятёрочка",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-07-04T20:23:00",
-      "amount": 6912,
+      "ts": "2026-07-04T20:07:00",
+      "amount": 5426,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
-      "merchant": "пиццерия",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-07-04T21:33:00",
-      "amount": 517,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
+      "merchant": "бургерная",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-07-05T07:41:00",
-      "amount": 898,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -4872,7 +4993,7 @@
     },
     {
       "ts": "2026-07-05T10:00:00",
-      "amount": 132000,
+      "amount": 105600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -4882,19 +5003,19 @@
       "person": "husband"
     },
     {
-      "ts": "2026-07-05T12:22:00",
-      "amount": 894,
+      "ts": "2026-07-05T10:05:00",
+      "amount": 26400,
       "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
-      "comment": null,
-      "scope": "common",
-      "person": null
+      "account": "Личная карта мужа",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "husband",
+      "person": "husband"
     },
     {
       "ts": "2026-07-05T14:19:00",
-      "amount": 6000,
+      "amount": 5925,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -4904,34 +5025,34 @@
       "person": null
     },
     {
-      "ts": "2026-07-05T17:40:00",
-      "amount": 11845,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Развлечения",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2026-07-07T20:07:00",
-      "amount": 432,
+      "ts": "2026-07-05T14:22:00",
+      "amount": 3239,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
+      "category": "Рестораны",
+      "merchant": "ресторан у моста",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-07-09T21:22:00",
-      "amount": 6000,
+      "ts": "2026-07-05T19:34:00",
+      "amount": 4959,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Развлечения",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-07-07T22:38:00",
+      "amount": 6176,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "пятёрочка",
+      "category": "Рестораны",
+      "merchant": "бургерная",
       "comment": null,
       "scope": "common",
       "person": null
@@ -4948,48 +5069,26 @@
       "person": null
     },
     {
-      "ts": "2026-07-10T15:13:00",
-      "amount": 584,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "яндекс.такси",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-07-11T10:24:00",
-      "amount": 6000,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "пятёрочка",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-07-11T15:10:00",
-      "amount": 6343,
+      "ts": "2026-07-10T16:13:00",
+      "amount": 5686,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
-      "merchant": "ресторан у моста",
+      "merchant": "кафе на углу",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-07-11T16:09:00",
-      "amount": 900,
+      "ts": "2026-07-12T14:20:00",
+      "amount": 5495,
       "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
       "comment": null,
-      "scope": "common",
-      "person": null
+      "scope": "husband",
+      "person": "husband"
     },
     {
       "ts": "2026-07-12T15:40:00",
@@ -5004,7 +5103,7 @@
     },
     {
       "ts": "2026-07-13T07:20:00",
-      "amount": 609,
+      "amount": 306,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5015,18 +5114,29 @@
     },
     {
       "ts": "2026-07-13T09:21:00",
-      "amount": 5721,
+      "amount": 2180,
       "currency": "RUB",
-      "account": "Личная карта мужа",
+      "account": "Личная карта жены",
       "category": "Одежда",
       "merchant": null,
       "comment": null,
-      "scope": "husband",
-      "person": "husband"
+      "scope": "wife",
+      "person": "wife"
     },
     {
-      "ts": "2026-07-13T11:42:00",
-      "amount": 810,
+      "ts": "2026-07-13T10:57:00",
+      "amount": 900,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-07-13T13:28:00",
+      "amount": 865,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5037,7 +5147,7 @@
     },
     {
       "ts": "2026-07-14T07:28:00",
-      "amount": 733,
+      "amount": 409,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5047,26 +5157,15 @@
       "person": null
     },
     {
-      "ts": "2026-07-14T16:50:00",
-      "amount": 9457,
+      "ts": "2026-07-14T13:58:00",
+      "amount": 3870,
       "currency": "RUB",
       "account": "Личная карта жены",
-      "category": "Образование",
+      "category": "Одежда",
       "merchant": null,
       "comment": null,
       "scope": "wife",
       "person": "wife"
-    },
-    {
-      "ts": "2026-07-14T22:18:00",
-      "amount": 5183,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Одежда",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
     },
     {
       "ts": "2026-07-15T08:00:00",
@@ -5080,8 +5179,19 @@
       "person": "wife"
     },
     {
+      "ts": "2026-07-15T15:30:00",
+      "amount": 5918,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-07-15T17:00:00",
-      "amount": 454,
+      "amount": 482,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5089,21 +5199,10 @@
       "comment": null,
       "scope": "common",
       "person": null
-    },
-    {
-      "ts": "2026-07-16T16:53:00",
-      "amount": 2385,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
     },
     {
       "ts": "2026-07-17T14:17:00",
-      "amount": 900,
+      "amount": 756,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5113,19 +5212,19 @@
       "person": null
     },
     {
-      "ts": "2026-07-17T14:55:00",
-      "amount": 6959,
+      "ts": "2026-07-17T20:24:00",
+      "amount": 6803,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
-      "merchant": "кафе на углу",
+      "merchant": "суши-бар",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-07-18T17:13:00",
-      "amount": 758,
+      "amount": 829,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5136,7 +5235,7 @@
     },
     {
       "ts": "2026-07-18T21:03:00",
-      "amount": 602,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5147,7 +5246,7 @@
     },
     {
       "ts": "2026-07-18T22:18:00",
-      "amount": 779,
+      "amount": 898,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5155,17 +5254,6 @@
       "comment": null,
       "scope": "common",
       "person": null
-    },
-    {
-      "ts": "2026-07-19T13:29:00",
-      "amount": 6793,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Одежда",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
     },
     {
       "ts": "2026-07-19T19:49:00",
@@ -5180,7 +5268,7 @@
     },
     {
       "ts": "2026-07-20T10:00:00",
-      "amount": 96000,
+      "amount": 76800,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -5190,19 +5278,19 @@
       "person": "wife"
     },
     {
-      "ts": "2026-07-21T15:03:00",
-      "amount": 6437,
+      "ts": "2026-07-20T10:05:00",
+      "amount": 19200,
       "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Подарки",
+      "account": "Личная карта жены",
+      "category": "Зарплата",
       "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
+      "comment": "личная доля",
+      "scope": "wife",
+      "person": "wife"
     },
     {
-      "ts": "2026-07-21T17:03:00",
-      "amount": 4901,
+      "ts": "2026-07-21T15:03:00",
+      "amount": 2359,
       "currency": "RUB",
       "account": "Личная карта жены",
       "category": "Подарки",
@@ -5213,7 +5301,7 @@
     },
     {
       "ts": "2026-07-21T21:49:00",
-      "amount": 899,
+      "amount": 900,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5223,30 +5311,19 @@
       "person": null
     },
     {
-      "ts": "2026-07-22T13:57:00",
-      "amount": 874,
+      "ts": "2026-07-22T10:53:00",
+      "amount": 5999,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "яндекс.такси",
+      "category": "Продукты",
+      "merchant": "ашан",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-07-22T13:57:00",
-      "amount": 8216,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Развлечения",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
       "ts": "2026-07-22T15:21:00",
-      "amount": 5789,
+      "amount": 5357,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -5256,12 +5333,23 @@
       "person": null
     },
     {
-      "ts": "2026-07-23T19:12:00",
-      "amount": 503,
+      "ts": "2026-07-22T22:52:00",
+      "amount": 6185,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "пиццерия",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-07-22T23:43:00",
+      "amount": 882,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
-      "merchant": "каршеринг",
+      "merchant": "метро",
       "comment": null,
       "scope": "common",
       "person": null
@@ -5279,7 +5367,7 @@
     },
     {
       "ts": "2026-07-24T15:25:00",
-      "amount": 5996,
+      "amount": 5610,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -5289,8 +5377,19 @@
       "person": null
     },
     {
+      "ts": "2026-07-24T16:37:00",
+      "amount": 1271,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
       "ts": "2026-07-25T07:24:00",
-      "amount": 900,
+      "amount": 858,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5300,74 +5399,8 @@
       "person": null
     },
     {
-      "ts": "2026-07-25T15:51:00",
-      "amount": 6878,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "кафе на углу",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-07-25T16:07:00",
-      "amount": 498,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "каршеринг",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-07-25T21:48:00",
-      "amount": 5979,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "вв",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-07-26T14:43:00",
-      "amount": 5951,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "пятёрочка",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-07-27T11:44:00",
-      "amount": 9033,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Развлечения",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
-      "ts": "2026-07-27T16:24:00",
-      "amount": 5999,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "вв",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-07-27T16:55:00",
-      "amount": 5976,
+      "ts": "2026-07-25T14:00:00",
+      "amount": 5991,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -5377,19 +5410,8 @@
       "person": null
     },
     {
-      "ts": "2026-07-28T13:53:00",
-      "amount": 5247,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "пиццерия",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-07-29T09:23:00",
-      "amount": 896,
+      "ts": "2026-07-25T16:07:00",
+      "amount": 897,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5399,19 +5421,52 @@
       "person": null
     },
     {
-      "ts": "2026-07-29T13:43:00",
-      "amount": 6000,
+      "ts": "2026-07-25T19:21:00",
+      "amount": 899,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "самокат",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-07-29T20:07:00",
-      "amount": 4489,
+      "ts": "2026-07-25T22:05:00",
+      "amount": 6792,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Здоровье",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-07-26T20:02:00",
+      "amount": 6000,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-07-27T11:50:00",
+      "amount": 6000,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-07-27T14:25:00",
+      "amount": 1896,
       "currency": "RUB",
       "account": "Личная карта мужа",
       "category": "Образование",
@@ -5421,8 +5476,96 @@
       "person": "husband"
     },
     {
+      "ts": "2026-07-28T12:10:00",
+      "amount": 3612,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-07-28T13:53:00",
+      "amount": 6642,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "пиццерия",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-07-28T16:09:00",
+      "amount": 900,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-07-28T18:13:00",
+      "amount": 4622,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Развлечения",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-07-28T19:13:00",
+      "amount": 5994,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "ашан",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-07-29T08:45:00",
+      "amount": 900,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-07-29T09:23:00",
+      "amount": 663,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "каршеринг",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-07-29T16:55:00",
+      "amount": 4310,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "ашан",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
       "ts": "2026-07-30T14:49:00",
-      "amount": 5826,
+      "amount": 5641,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -5433,7 +5576,7 @@
     },
     {
       "ts": "2026-07-31T21:38:00",
-      "amount": 5933,
+      "amount": 6000,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -5443,41 +5586,30 @@
       "person": null
     },
     {
-      "ts": "2026-08-01T11:52:00",
-      "amount": 4894,
+      "ts": "2026-08-02T13:49:00",
+      "amount": 5108,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "пятёрочка",
+      "merchant": "самокат",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-08-02T13:35:00",
-      "amount": 4036,
+      "ts": "2026-08-03T10:49:00",
+      "amount": 3602,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "вв",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-02T18:43:00",
-      "amount": 2909,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "пиццерия",
+      "merchant": "самокат",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-08-04T07:33:00",
-      "amount": 494,
+      "amount": 655,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5487,23 +5619,23 @@
       "person": null
     },
     {
-      "ts": "2026-08-04T19:53:00",
-      "amount": 634,
+      "ts": "2026-08-04T14:08:00",
+      "amount": 2909,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "каршеринг",
+      "category": "Рестораны",
+      "merchant": "бургерная",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-08-04T21:37:00",
-      "amount": 5999,
+      "ts": "2026-08-04T18:30:00",
+      "amount": 785,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "перекрёсток",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
       "comment": null,
       "scope": "common",
       "person": null
@@ -5521,7 +5653,7 @@
     },
     {
       "ts": "2026-08-05T10:00:00",
-      "amount": 132000,
+      "amount": 105600,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -5531,52 +5663,19 @@
       "person": "husband"
     },
     {
-      "ts": "2026-08-06T07:45:00",
-      "amount": 726,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "азс лукойл",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-07T16:20:00",
-      "amount": 5341,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "бургерная",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-08T15:17:00",
-      "amount": 733,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "каршеринг",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-09T12:11:00",
-      "amount": 3956,
+      "ts": "2026-08-05T10:05:00",
+      "amount": 26400,
       "currency": "RUB",
       "account": "Личная карта мужа",
-      "category": "Образование",
+      "category": "Зарплата",
       "merchant": null,
-      "comment": null,
+      "comment": "личная доля",
       "scope": "husband",
       "person": "husband"
     },
     {
-      "ts": "2026-08-09T14:45:00",
-      "amount": 542,
+      "ts": "2026-08-05T15:33:00",
+      "amount": 318,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5586,8 +5685,41 @@
       "person": null
     },
     {
-      "ts": "2026-08-09T20:24:00",
-      "amount": 4436,
+      "ts": "2026-08-06T07:45:00",
+      "amount": 804,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-06T16:13:00",
+      "amount": 5290,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "ресторан у моста",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-06T19:04:00",
+      "amount": 3450,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "пятёрочка",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-07T14:12:00",
+      "amount": 6720,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Рестораны",
@@ -5597,15 +5729,70 @@
       "person": null
     },
     {
-      "ts": "2026-08-09T21:35:00",
-      "amount": 4340,
+      "ts": "2026-08-07T17:30:00",
+      "amount": 1761,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "перекрёсток",
+      "merchant": "пятёрочка",
       "comment": null,
       "scope": "common",
       "person": null
+    },
+    {
+      "ts": "2026-08-07T21:42:00",
+      "amount": 5664,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-08T13:14:00",
+      "amount": 1851,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "магнит",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-08T15:17:00",
+      "amount": 596,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "каршеринг",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-08T19:01:00",
+      "amount": 1912,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "самокат",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-09T21:10:00",
+      "amount": 1398,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Подарки",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
     },
     {
       "ts": "2026-08-10T08:00:00",
@@ -5619,19 +5806,19 @@
       "person": null
     },
     {
-      "ts": "2026-08-10T22:15:00",
-      "amount": 9467,
+      "ts": "2026-08-10T09:37:00",
+      "amount": 633,
       "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Здоровье",
-      "merchant": null,
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
       "comment": null,
-      "scope": "wife",
-      "person": "wife"
+      "scope": "common",
+      "person": null
     },
     {
       "ts": "2026-08-11T10:16:00",
-      "amount": 896,
+      "amount": 453,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5642,7 +5829,7 @@
     },
     {
       "ts": "2026-08-11T11:23:00",
-      "amount": 5778,
+      "amount": 5431,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -5652,19 +5839,63 @@
       "person": null
     },
     {
-      "ts": "2026-08-11T13:23:00",
-      "amount": 2411,
+      "ts": "2026-08-11T22:40:00",
+      "amount": 474,
       "currency": "RUB",
       "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "бургерная",
+      "category": "Транспорт",
+      "merchant": "метро",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
-      "ts": "2026-08-11T16:18:00",
-      "amount": 899,
+      "ts": "2026-08-12T15:37:00",
+      "amount": 5109,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "ашан",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-13T09:19:00",
+      "amount": 5830,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "самокат",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-13T21:13:00",
+      "amount": 884,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-13T21:39:00",
+      "amount": 3591,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "ресторан у моста",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-14T14:20:00",
+      "amount": 706,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5674,30 +5905,8 @@
       "person": null
     },
     {
-      "ts": "2026-08-13T17:11:00",
-      "amount": 11032,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Образование",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
-      "ts": "2026-08-13T22:38:00",
-      "amount": 10557,
-      "currency": "RUB",
-      "account": "Личная карта жены",
-      "category": "Подарки",
-      "merchant": null,
-      "comment": null,
-      "scope": "wife",
-      "person": "wife"
-    },
-    {
-      "ts": "2026-08-14T10:53:00",
-      "amount": 596,
+      "ts": "2026-08-14T17:17:00",
+      "amount": 359,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5707,15 +5916,37 @@
       "person": null
     },
     {
-      "ts": "2026-08-14T10:57:00",
-      "amount": 6373,
+      "ts": "2026-08-14T21:03:00",
+      "amount": 1722,
       "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Здоровье",
+      "account": "Личная карта жены",
+      "category": "Развлечения",
       "merchant": null,
       "comment": null,
-      "scope": "husband",
-      "person": "husband"
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-08-14T21:44:00",
+      "amount": 3536,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "кафе на углу",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-14T22:56:00",
+      "amount": 2720,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Образование",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
     },
     {
       "ts": "2026-08-15T08:00:00",
@@ -5730,62 +5961,7 @@
     },
     {
       "ts": "2026-08-15T17:28:00",
-      "amount": 3591,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "кафе на углу",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-15T21:38:00",
-      "amount": 3297,
-      "currency": "RUB",
-      "account": "Личная карта мужа",
-      "category": "Подарки",
-      "merchant": null,
-      "comment": null,
-      "scope": "husband",
-      "person": "husband"
-    },
-    {
-      "ts": "2026-08-17T14:37:00",
-      "amount": 4679,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "вв",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-18T14:41:00",
-      "amount": 460,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-18T16:00:00",
-      "amount": 3425,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "пятёрочка",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-18T20:28:00",
-      "amount": 785,
+      "amount": 893,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5795,19 +5971,85 @@
       "person": null
     },
     {
-      "ts": "2026-08-19T08:42:00",
-      "amount": 487,
+      "ts": "2026-08-16T09:11:00",
+      "amount": 2192,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "ашан",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-16T10:30:00",
+      "amount": 2717,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Развлечения",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-08-16T16:30:00",
+      "amount": 4514,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Здоровье",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-08-16T21:52:00",
+      "amount": 5341,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "ресторан у моста",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-18T09:29:00",
+      "amount": 2051,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Здоровье",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-08-18T14:41:00",
+      "amount": 558,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
-      "merchant": "каршеринг",
+      "merchant": "автобус",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-18T20:28:00",
+      "amount": 805,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "яндекс.такси",
       "comment": null,
       "scope": "common",
       "person": null
     },
     {
       "ts": "2026-08-19T12:29:00",
-      "amount": 714,
+      "amount": 514,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5817,41 +6059,8 @@
       "person": null
     },
     {
-      "ts": "2026-08-19T13:49:00",
-      "amount": 805,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "метро",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-19T14:13:00",
-      "amount": 804,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "автобус",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-19T21:25:00",
-      "amount": 4581,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "перекрёсток",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-08-20T10:00:00",
-      "amount": 96000,
+      "amount": 76800,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Зарплата",
@@ -5861,8 +6070,30 @@
       "person": "wife"
     },
     {
-      "ts": "2026-08-21T10:06:00",
-      "amount": 6000,
+      "ts": "2026-08-20T10:05:00",
+      "amount": 19200,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Зарплата",
+      "merchant": null,
+      "comment": "личная доля",
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-08-21T17:21:00",
+      "amount": 5322,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "самокат",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-21T21:26:00",
+      "amount": 3941,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
@@ -5872,30 +6103,8 @@
       "person": null
     },
     {
-      "ts": "2026-08-21T21:00:00",
-      "amount": 5821,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Рестораны",
-      "merchant": "бургерная",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
-      "ts": "2026-08-22T09:32:00",
-      "amount": 1957,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Продукты",
-      "merchant": "перекрёсток",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-08-22T11:55:00",
-      "amount": 536,
+      "amount": 357,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5905,19 +6114,8 @@
       "person": null
     },
     {
-      "ts": "2026-08-22T16:57:00",
-      "amount": 815,
-      "currency": "RUB",
-      "account": "Основная карта",
-      "category": "Транспорт",
-      "merchant": "яндекс.такси",
-      "comment": null,
-      "scope": "common",
-      "person": null
-    },
-    {
       "ts": "2026-08-23T22:00:00",
-      "amount": 453,
+      "amount": 366,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Транспорт",
@@ -5927,12 +6125,155 @@
       "person": null
     },
     {
-      "ts": "2026-08-24T14:27:00",
-      "amount": 5954,
+      "ts": "2026-08-24T21:24:00",
+      "amount": 5625,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Образование",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-08-24T22:17:00",
+      "amount": 2441,
+      "currency": "RUB",
+      "account": "Личная карта жены",
+      "category": "Одежда",
+      "merchant": null,
+      "comment": null,
+      "scope": "wife",
+      "person": "wife"
+    },
+    {
+      "ts": "2026-08-25T07:25:00",
+      "amount": 323,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "азс лукойл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-25T08:42:00",
+      "amount": 724,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "каршеринг",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-25T10:07:00",
+      "amount": 3508,
       "currency": "RUB",
       "account": "Основная карта",
       "category": "Продукты",
-      "merchant": "самокат",
+      "merchant": "вв",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-25T21:53:00",
+      "amount": 341,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "каршеринг",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-26T14:13:00",
+      "amount": 540,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-26T20:07:00",
+      "amount": 825,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "автобус",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-27T10:24:00",
+      "amount": 5045,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Развлечения",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-08-27T13:25:00",
+      "amount": 4267,
+      "currency": "RUB",
+      "account": "Личная карта мужа",
+      "category": "Образование",
+      "merchant": null,
+      "comment": null,
+      "scope": "husband",
+      "person": "husband"
+    },
+    {
+      "ts": "2026-08-27T15:21:00",
+      "amount": 2920,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вкусвилл",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-27T15:58:00",
+      "amount": 2084,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Рестораны",
+      "merchant": "бургерная",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-27T18:51:00",
+      "amount": 4498,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Продукты",
+      "merchant": "вв",
+      "comment": null,
+      "scope": "common",
+      "person": null
+    },
+    {
+      "ts": "2026-08-28T13:49:00",
+      "amount": 770,
+      "currency": "RUB",
+      "account": "Основная карта",
+      "category": "Транспорт",
+      "merchant": "метро",
       "comment": null,
       "scope": "common",
       "person": null
