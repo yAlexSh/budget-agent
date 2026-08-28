@@ -1194,8 +1194,12 @@ def test_report_empty_month_says_no_expenses_yet(monkeypatch):
     # оборванный вывод. Сид теперь почти всегда покрывает текущий месяц
     # (пункт 3), поэтому пустоту здесь имитируем явно через get_expenses,
     # а не полагаемся на то, что в базе пусто от природы.
+    # Заглушка повторяет реальный контракт целиком: с появлением
+    # other_currencies (ревью PR #20) неполный словарь означал бы, что тест
+    # зеленеет на форме, которой инструмент уже не возвращает.
     monkeypatch.setattr("budget_agent.get_expenses",
-                        lambda ctx, period, category: {"data": {"by_category": []}})
+                        lambda ctx, period, category: {
+                            "data": {"by_category": [], "other_currencies": []}})
     txt, markup = render_report(PRIV_H)
     assert txt == "В этом месяце трат ещё не было."
     assert markup["inline_keyboard"][0][0]["callback_data"] == "ai_advice"
@@ -2762,3 +2766,65 @@ def test_every_registry_tool_is_expressible_in_next_step_schema():
     schema = json.dumps(NextStep.model_json_schema(), ensure_ascii=False)
     missing = [name for name in TOOL_REGISTRY if f'"{name}"' not in schema]
     assert not missing, f"в реестре есть, а вызвать нельзя: {missing}"
+
+
+# ===== 7. Валютные операции не исчезают из отчётов =====
+#
+# Ревью PR #20: доход в долларах записывался (ParsedTransaction допускает USD,
+# add_income проводит его по валютному счёту), но get_income фильтрует
+# t.currency = 'RUB' и возвращает один total без единого слова о том, что
+# валютная операция в него не вошла. Бот подтверждал запись, а потом на вопрос
+# «сколько заработали» отвечал уверенно неполной суммой. Та же дыра была и у
+# расходов — она старше и досталась доходам по наследству.
+
+def _delete_marker(marker: str):
+    with db() as conn:
+        conn.execute("DELETE FROM transactions WHERE merchant = %s", (marker,))
+
+
+def test_usd_income_is_disclosed_by_get_income():
+    """Валютный доход виден в ответе инструмента, а не молча пропадает."""
+    try:
+        add_income(PRIV_H, 1234, "ТЕСТ_Доход_USD", category="Зарплата", currency="USD")
+        d = get_income(PRIV_H, "this_month")["data"]
+        assert ("USD", 1234.0) in d["other_currencies"], \
+            "валютный доход обязан быть назван отдельно от рублёвого итога"
+        assert d["total"] == sum(v for _, v in d["by_category"]), "рублёвый итог считается по рублям"
+    finally:
+        _delete_marker("ТЕСТ_Доход_USD")
+
+
+def test_usd_expense_is_disclosed_by_get_expenses():
+    """Тот же контракт у расходов — дыра была общая."""
+    try:
+        add_expense(PRIV_H, 99, "ТЕСТ_Трата_USD", category="Продукты", currency="USD")
+        d = get_expenses(PRIV_H, "this_month")["data"]
+        assert ("USD", 99.0) in d["other_currencies"]
+    finally:
+        _delete_marker("ТЕСТ_Трата_USD")
+
+
+def test_report_mentions_currency_expenses():
+    """Быстрый путь /report тоже обязан признаться, а не показывать только рубли."""
+    try:
+        add_expense(PRIV_H, 55, "ТЕСТ_Трата_USD_2", category="Продукты", currency="USD")
+        text, _ = render_report(PRIV_H)
+        assert "USD" in text, "отчёт молчит о валютных тратах месяца"
+    finally:
+        _delete_marker("ТЕСТ_Трата_USD_2")
+
+
+def test_status_mentions_currency_expenses():
+    """/status сравнивает с рублёвым лимитом — про валютные траты он обязан сказать."""
+    try:
+        add_expense(PRIV_H, 77, "ТЕСТ_Трата_USD_3", category="Продукты", currency="USD")
+        text = render_status(PRIV_H)
+        assert "USD" in text
+    finally:
+        _delete_marker("ТЕСТ_Трата_USD_3")
+
+
+def test_income_without_currency_operations_reports_empty_list():
+    """Когда валютных операций нет, поле пустое — не None и не отсутствует."""
+    d = get_income(PRIV_H, "last_month")["data"]
+    assert d["other_currencies"] == []
