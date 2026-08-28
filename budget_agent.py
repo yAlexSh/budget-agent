@@ -496,17 +496,22 @@ def load_seed(conn, path: str = "seed_data.json", force: bool = False) -> dict[s
 def _scopes(ctx: Ctx) -> list[str]:
     return list(visible_scopes(ctx.person, ctx.chat_type))
 
-def get_balance(ctx: Ctx) -> dict:
-    """Остатки по счетам, раздельно по валютам. Баланс = opening_balance + сумма
+def _balance_rows(scopes: list[str]) -> list[tuple[str, str, float]]:
+    """Остатки по (область, валюта). Баланс = opening_balance + сумма
     транзакций со знаком: расходы (categories.kind='expense') вычитаются,
     доходы прибавляются. Суммы в transactions.amount хранятся положительными
     во всех случаях — знак несёт categories.kind, а не сам amount, поэтому
     подзапрос обязан присоединять categories и применять CASE, а не просто
-    суммировать amount как есть (иначе расходы прибавлялись бы к балансу
-    вместо вычитания — было исправлено этой правкой)."""
+    суммировать amount как есть.
+
+    Разбивка по областям нужна команде /balance: общие деньги и личная карта
+    спрашивающего — разные величины, и складывать их в одно число значит
+    показывать сумму, которой нет ни на одном счёте. Инструмент агента
+    (get_balance) складывает эти же строки по валютам — один запрос, два
+    представления, чтобы условия подсчёта не разъехались."""
     with db() as conn:
-        cur = conn.execute(
-            """SELECT a.currency,
+        rows = conn.execute(
+            """SELECT a.scope, a.currency,
                       SUM(a.opening_balance) + COALESCE(SUM(t.total), 0) AS balance
                FROM accounts a
                LEFT JOIN (SELECT t.account_id,
@@ -514,9 +519,15 @@ def get_balance(ctx: Ctx) -> dict:
                                           ELSE t.amount END) AS total
                           FROM transactions t JOIN categories c ON c.id = t.category_id
                           WHERE t.scope = ANY(%s) GROUP BY t.account_id) t ON t.account_id = a.id
-               WHERE a.scope = ANY(%s) GROUP BY a.currency""",
-            (_scopes(ctx), _scopes(ctx)))
-        data = {cur_code: float(bal) for cur_code, bal in cur.fetchall()}
+               WHERE a.scope = ANY(%s) GROUP BY a.scope, a.currency""",
+            (scopes, scopes)).fetchall()
+    return [(scope, cur, float(bal)) for scope, cur, bal in rows]
+
+def get_balance(ctx: Ctx) -> dict:
+    """Остатки по счетам, раздельно по валютам (см. _balance_rows)."""
+    data: dict[str, float] = {}
+    for _, currency, balance in _balance_rows(_scopes(ctx)):
+        data[currency] = data.get(currency, 0.0) + balance
     return {"data": data, "source_keys": ["family_data"]}
 
 def _month_bounds(year: int, month: int) -> tuple[_dt.date, _dt.date]:
@@ -1934,6 +1945,32 @@ def _currency_note(rows: list[tuple[str, float]]) -> str:
     parts = ", ".join(f"{_rub(total)} {cur}" for cur, total in rows)
     return f"\nВ валюте отдельно: {parts} — в рублёвый итог не входит."
 
+def _money_line(sums: dict[str, float]) -> str:
+    """«1 544 092 ₽, 7 000 USD» — рубли значком, прочие валюты кодом."""
+    parts = []
+    for currency in sorted(sums):
+        amount = _rub(sums[currency])
+        parts.append(f"{amount} ₽" if currency == "RUB" else f"{amount} {currency}")
+    return ", ".join(parts) if parts else "0 ₽"
+
+def render_balance(ctx: Ctx) -> str:
+    """Остатки по счетам: общие отдельно, личные спрашивающего отдельно.
+
+    Одна сумма здесь врала бы в обе стороны: в личном чате она равна общим
+    деньгам плюс личная карта, то есть числу, которого нет ни на одном счёте,
+    а в общем чате — только общим, и два ответа на один вопрос расходились бы
+    без объяснения. В групповом чате личной строки нет вовсе: личные деньги
+    второму супругу не видны (см. visible_scopes)."""
+    common: dict[str, float] = {}
+    personal: dict[str, float] = {}
+    for scope, currency, balance in _balance_rows(_scopes(ctx)):
+        bucket = common if scope == "common" else personal
+        bucket[currency] = bucket.get(currency, 0.0) + balance
+    text = f"Общие счета: {_money_line(common)}"
+    if personal:
+        text += f"\nВаши личные: {_money_line(personal)}"
+    return text
+
 def render_status(ctx: Ctx) -> str:
     """Лимит месяца, потрачено, остаток — чистый SQL и форматирование, без
     единого обращения к модели: команды остаются мгновенными и не зависят
@@ -1970,6 +2007,7 @@ START_TEXT = (
 HELP_TEXT = (
     "Вот что я умею.\n\n"
     "/status — сколько уже потрачено и сколько осталось до лимита\n"
+    "/balance — остатки по счетам: общие и ваши личные\n"
     "/report — расходы за месяц по категориям и кнопка «Совет от ИИ»\n"
     "/start — задать месячный лимит заново, если он изменился\n"
     "/help — эта справка\n\n"
@@ -2001,6 +2039,8 @@ def handle_command(cmd: str, ctx: Ctx, arg: str | None) -> "str | tuple[str, dic
         return START_TEXT
     if cmd == "/status":
         return render_status(ctx)
+    if cmd == "/balance":
+        return render_balance(ctx)
     if cmd == "/report":
         return render_report(ctx)          # кортеж (текст, разметка)
     if cmd == "/help":
@@ -2524,7 +2564,7 @@ async def _run_with_broadcast(bot, ctx: Ctx, make_call):
 
 
 async def _on_text(update, context) -> None:
-    """Общий обработчик и для CommandHandler (четыре команды), и для
+    """Общий обработчик и для CommandHandler (пять команд), и для
     MessageHandler свободного текста — route_message сама решает по тексту,
     куда вести сообщение, поэтому дублировать разбор здесь незачем.
 
@@ -2589,6 +2629,7 @@ async def _on_advice(update, context) -> None:
 BOT_COMMANDS = [
     ("start", "Начать и задать месячный лимит"),
     ("status", "Сколько потрачено из лимита"),
+    ("balance", "Остатки по счетам"),
     ("report", "Расходы за месяц и совет от ИИ"),
     ("help", "Список команд и что я умею"),
 ]
@@ -2648,7 +2689,7 @@ async def _skip_stale(update, context) -> None:
 
 
 def run_telegram() -> None:
-    """Поллинг Telegram: CommandHandler на четыре команды (/start, /status,
+    """Поллинг Telegram: CommandHandler на пять команд (/start, /status, /balance,
     /report, /help), MessageHandler на свободный текст, CallbackQueryHandler
     на кнопку «Совет от ИИ». Без токена — понятное сообщение и возврат, а не
     падение: в закрытом контуре без реального бота эта ветка не нужна, но не
@@ -2688,7 +2729,7 @@ def run_telegram() -> None:
     # Группа -1 — раньше всех остальных: страж очереди простоя смотрит любое
     # сообщение, включая команды, и решает, дойдёт ли оно до разбора.
     app.add_handler(MessageHandler(filters.ALL, _skip_stale), group=-1)
-    for cmd in ("start", "status", "report", "help"):
+    for cmd in ("start", "status", "balance", "report", "help"):
         app.add_handler(CommandHandler(cmd, _on_text))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _on_text))
     app.add_handler(CallbackQueryHandler(_on_advice, pattern="^ai_advice$"))

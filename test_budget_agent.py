@@ -1990,16 +1990,16 @@ class _FakeAppForPostInit:
     def __init__(self):
         self.bot = _FakeBotForCommands()
 
-def test_post_init_registers_all_four_commands():
+def test_post_init_registers_all_menu_commands():
     app = _FakeAppForPostInit()
     asyncio.run(_post_init(app))
     assert len(app.bot.set_commands_calls) == 1, "set_my_commands должен вызываться ровно один раз"
     commands = app.bot.set_commands_calls[0]
-    assert [c.command for c in commands] == ["start", "status", "report", "help"]
+    assert [c.command for c in commands] == ["start", "status", "balance", "report", "help"]
     assert all(c.description for c in commands), "у каждой команды должно быть описание"
 
 def test_bot_commands_list_matches_registered_descriptions():
-    assert [cmd for cmd, _ in BOT_COMMANDS] == ["start", "status", "report", "help"]
+    assert [cmd for cmd, _ in BOT_COMMANDS] == ["start", "status", "balance", "report", "help"]
     assert all(descr for _, descr in BOT_COMMANDS)
 
 
@@ -2368,10 +2368,10 @@ def test_run_polling_keeps_queue_and_registers_stale_guard(monkeypatch):
         "edited_message проходил filters.TEXT в _on_text, где resolve_ctx "
         "падал на ветке callback_query — человек, поправивший опечатку в "
         "сообщении, получал тишину и исключение в журнале")
-    # Заодно фиксируем, что подмена не сломала регистрацию: страж, четыре
-    # команды, свободный текст и кнопка «Совет от ИИ» — иначе тест мог бы
+    # Заодно фиксируем, что подмена не сломала регистрацию: страж, пять
+    # команд, свободный текст и кнопка «Совет от ИИ» — иначе тест мог бы
     # позеленеть на пустом run_telegram, ничего в действительности не проверив.
-    assert len(handlers) == 7, len(handlers)
+    assert len(handlers) == 8, len(handlers)
     guards = [g for h, g in handlers if g < 0]
     assert guards == [-1], "страж очереди простоя обязан идти раньше остальных обработчиков"
     assert budget_agent._STARTED_AT is not None, "момент запуска не зафиксирован"
@@ -2646,18 +2646,38 @@ def _income_rows(chat_marker: str):
 
 
 def test_get_income_returns_total_and_categories():
-    """Зеркало get_expenses по kind='income': сид даёт 228 000 ₽ в месяц."""
+    """Зеркало get_expenses по kind='income'.
+
+    Ожидания выведены из самих данных, а не записаны числом: сид зависит от
+    даты генерации и от доли зарплаты, уходящей на личные карты, — тест,
+    прибитый к 228 000, краснел бы при каждой пересборке сида, не найдя ни
+    одной ошибки в коде.
+    """
     r = get_income(PRIV_H, "last_month")
+    d = r["data"]
     assert r["source_keys"] == ["family_data"]
-    assert r["data"]["total"] == 228000
-    assert ("Зарплата", 228000.0) in r["data"]["by_category"]
+    assert d["by_category"], "в прошлом месяце обязан быть доход"
+    assert d["total"] == sum(v for _, v in d["by_category"])
+    assert any(name == "Зарплата" for name, _ in d["by_category"])
+
+
+def test_get_income_counts_a_new_record():
+    """Записанный доход увеличивает итог ровно на свою сумму."""
+    before = get_income(PRIV_H, "this_month")["data"]["total"]
+    try:
+        add_income(PRIV_H, 5000, "ТЕСТ_Доход_дельта", category="Зарплата")
+        after = get_income(PRIV_H, "this_month")["data"]["total"]
+        assert after - before == 5000
+    finally:
+        with db() as conn:
+            conn.execute("DELETE FROM transactions WHERE merchant='ТЕСТ_Доход_дельта'")
 
 
 def test_get_income_is_registered_as_tool():
     from budget_agent import TOOL_REGISTRY
     assert "get_income" in TOOL_REGISTRY
     r = TOOL_REGISTRY["get_income"](PRIV_H, {"period": "last_month"})
-    assert r["data"]["total"] == 228000
+    assert r["data"]["total"] == get_income(PRIV_H, "last_month")["data"]["total"]
 
 
 def test_income_message_is_recorded_with_income_category(monkeypatch):
@@ -2854,3 +2874,34 @@ def test_currency_totals_respect_category_filter():
     finally:
         with db() as conn:
             conn.execute("DELETE FROM transactions WHERE merchant='ТЕСТ_Такси_USD'")
+
+
+# ===== 8. Команда /balance =====
+#
+# Остатки по счетам спрашивали вопросом, и ответ занимал десятки секунд —
+# при том что это чистый SQL. Команда возвращает баланс мгновенно и, в
+# отличие от /status, показывает обе валюты и отделяет общие деньги от личных:
+# одна сумма смешивала бы общий счёт с личной картой спрашивающего.
+
+def test_balance_command_shows_common_and_personal_separately():
+    text = handle_command("/balance", PRIV_H, None)
+    assert "Общие" in text and "Ваши личные" in text
+    assert "USD" in text, "валютный счёт обязан быть виден"
+
+
+def test_balance_in_group_chat_has_no_personal_line():
+    """В общем чате личных денег не видно — приватность важнее полноты."""
+    text = handle_command("/balance", Ctx("husband", "group", -1001), None)
+    assert "Ваши личные" not in text
+
+
+def test_balance_command_is_registered_in_menu():
+    from budget_agent import BOT_COMMANDS
+    assert "balance" in [cmd for cmd, _ in BOT_COMMANDS]
+    assert "/balance" in HELP_TEXT
+
+
+def test_balance_command_does_not_call_model(monkeypatch):
+    monkeypatch.setattr("budget_agent.structured_call",
+                        lambda *a, **k: pytest.fail("баланс идёт без модели"))
+    assert "Общие" in handle_command("/balance", PRIV_H, None)

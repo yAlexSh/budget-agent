@@ -123,6 +123,26 @@ PERSONAL_CATEGORIES = ["Одежда", "Здоровье", "Развлечени
 SALARY_HUSBAND = 132000
 SALARY_WIFE = 96000
 
+# Доля зарплаты, которая считается личными деньгами супруга (правило
+# personal_money_share_pct в family_rules). Часть зарплаты приходит сразу на
+# личную карту — иначе личные счета живут без единого поступления и уходят в
+# минус тем глубже, чем длиннее история: правило объявлено в данных, а самих
+# денег в них нет.
+PERSONAL_SHARE_PCT = 20
+PERSONAL_SHARE = {
+    "husband": SALARY_HUSBAND * PERSONAL_SHARE_PCT // 100,
+    "wife": SALARY_WIFE * PERSONAL_SHARE_PCT // 100,
+}
+PERSONAL_ACCOUNT = {"husband": "Личная карта мужа", "wife": "Личная карта жены"}
+
+def _personal_amount(person: str) -> int:
+    """Случайная личная трата. Верхняя граница выведена из личной доли, а не
+    выбрана на глаз: 3-6 трат в месяц (в среднем 4,5) должны съедать около 70%
+    поступления, чтобы карта не пустела и не копила неправдоподобный остаток."""
+    target_month = PERSONAL_SHARE[person] * 0.7
+    mean = target_month / 4.5
+    return random.randint(1000, max(2000, int(2 * mean) - 1000))
+
 
 CATEGORY_RANGE = {
     "Продукты": (1500, 6000),
@@ -267,24 +287,28 @@ def _gen_month(y: int, m: int, month_index: int) -> list[dict]:
         "comment": "заморозка дважды в год", "scope": "wife", "person": "wife",
     })
 
-    # Зарплаты: 5-го — мужа, 20-го — жены.
-    txs.append({
-        "ts": _iso(y, m, 5, 10, 0), "amount": SALARY_HUSBAND, "currency": "RUB",
-        "account": "Основная карта", "category": "Зарплата", "merchant": None,
-        "comment": None, "scope": "common", "person": "husband",
-    })
-    txs.append({
-        "ts": _iso(y, m, 20, 10, 0), "amount": SALARY_WIFE, "currency": "RUB",
-        "account": "Основная карта", "category": "Зарплата", "merchant": None,
-        "comment": None, "scope": "common", "person": "wife",
-    })
+    # Зарплаты: 5-го — мужа, 20-го — жены. Каждая приходит двумя проводками:
+    # общая часть на общий счёт и личная доля (PERSONAL_SHARE_PCT) на личную
+    # карту супруга.
+    for person, day in (("husband", 5), ("wife", 20)):
+        salary = SALARY_HUSBAND if person == "husband" else SALARY_WIFE
+        txs.append({
+            "ts": _iso(y, m, day, 10, 0), "amount": salary - PERSONAL_SHARE[person],
+            "currency": "RUB", "account": "Основная карта", "category": "Зарплата",
+            "merchant": None, "comment": None, "scope": "common", "person": person,
+        })
+        txs.append({
+            "ts": _iso(y, m, day, 10, 5), "amount": PERSONAL_SHARE[person],
+            "currency": "RUB", "account": PERSONAL_ACCOUNT[person], "category": "Зарплата",
+            "merchant": None, "comment": "личная доля", "scope": person, "person": person,
+        })
 
     # Личные траты мужа и жены — 3-6 в месяц каждому.
     for person, account in (("husband", "Личная карта мужа"), ("wife", "Личная карта жены")):
         for _ in range(random.randint(3, 6)):
             d = random.randint(1, last_day)
             cat = random.choice(PERSONAL_CATEGORIES)
-            amt = random.randint(1000, 12000)
+            amt = _personal_amount(person)
             txs.append({
                 "ts": _iso(y, m, d, random.randint(9, 22), random.randint(0, 59)),
                 "amount": amt, "currency": "RUB", "account": account,
@@ -378,9 +402,14 @@ def _gen_current_month_partial(y: int, m: int, today_day: int) -> tuple[list[dic
             "comment": None, "scope": "common", "person": None,
         })
         txs.append({
-            "ts": _iso(y, m, 5, 10, 0), "amount": SALARY_HUSBAND, "currency": "RUB",
-            "account": "Основная карта", "category": "Зарплата", "merchant": None,
-            "comment": None, "scope": "common", "person": "husband",
+            "ts": _iso(y, m, 5, 10, 0), "amount": SALARY_HUSBAND - PERSONAL_SHARE["husband"],
+            "currency": "RUB", "account": "Основная карта", "category": "Зарплата",
+            "merchant": None, "comment": None, "scope": "common", "person": "husband",
+        })
+        txs.append({
+            "ts": _iso(y, m, 5, 10, 5), "amount": PERSONAL_SHARE["husband"], "currency": "RUB",
+            "account": PERSONAL_ACCOUNT["husband"], "category": "Зарплата", "merchant": None,
+            "comment": "личная доля", "scope": "husband", "person": "husband",
         })
     if today_day >= 15:
         txs.append({
@@ -390,9 +419,14 @@ def _gen_current_month_partial(y: int, m: int, today_day: int) -> tuple[list[dic
         })
     if today_day >= 20:
         txs.append({
-            "ts": _iso(y, m, 20, 10, 0), "amount": SALARY_WIFE, "currency": "RUB",
-            "account": "Основная карта", "category": "Зарплата", "merchant": None,
-            "comment": None, "scope": "common", "person": "wife",
+            "ts": _iso(y, m, 20, 10, 0), "amount": SALARY_WIFE - PERSONAL_SHARE["wife"],
+            "currency": "RUB", "account": "Основная карта", "category": "Зарплата",
+            "merchant": None, "comment": None, "scope": "common", "person": "wife",
+        })
+        txs.append({
+            "ts": _iso(y, m, 20, 10, 5), "amount": PERSONAL_SHARE["wife"], "currency": "RUB",
+            "account": PERSONAL_ACCOUNT["wife"], "category": "Зарплата", "merchant": None,
+            "comment": "личная доля", "scope": "wife", "person": "wife",
         })
 
     # Личные траты мужа и жены — число масштабируется той же долей, что и
@@ -404,7 +438,7 @@ def _gen_current_month_partial(y: int, m: int, today_day: int) -> tuple[list[dic
         for _ in range(random.randint(n_personal_lo, n_personal_hi)):
             d = random.randint(1, today_day)
             cat = random.choice(PERSONAL_CATEGORIES)
-            amt = random.randint(1000, 12000)
+            amt = _personal_amount(person)
             txs.append({
                 "ts": _iso(y, m, d, random.randint(9, 22), random.randint(0, 59)),
                 "amount": amt, "currency": "RUB", "account": account,
