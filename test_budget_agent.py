@@ -700,7 +700,7 @@ def test_budget_status_limit_excludes_usd_budget_limit(seeded_conn):
 
 # ===== Задача 7: каскад категоризации, ввод траты, состояние диалога =====
 
-from budget_agent import (categorize, add_expense, parse_spending,
+from budget_agent import (categorize, add_expense, parse_transaction,
                           get_state, set_state, STATE_TTL_SECONDS, resolve_person_id)
 
 def test_alias_hit_costs_no_llm(monkeypatch):
@@ -1287,7 +1287,7 @@ import asyncio
 import logging
 from budget_agent import (route_message, resolve_ctx, run_agent, FinalAnswer,
                           _try_complete_limit, _try_complete_category, _handle_spending,
-                          _on_text, _on_advice, run_telegram, ParsedSpending,
+                          _on_text, _on_advice, run_telegram, ParsedTransaction,
                           _ON_TEXT_ERROR_MSG, _ON_ADVICE_ERROR_MSG,
                           _is_authorized_ctx, _UNAUTHORIZED_MSG)
 
@@ -1307,7 +1307,7 @@ def test_command_goes_to_fast_path(monkeypatch):
 def test_spending_text_goes_to_add_expense(monkeypatch):
     monkeypatch.setattr("budget_agent.run_agent",
                         lambda *a, **k: pytest.fail("трата не идёт в SGR"))
-    # Реальный (не подменённый) вызов categorize/parse_spending: модель иногда
+    # Реальный (не подменённый) вызов categorize/parse_transaction: модель иногда
     # нормализует падеж мерчанта ("в Пятёрочке" -> merchant="Пятёрочка"), поэтому
     # чистим по id новой строки, а не по точному тексту мерчанта — иначе уборка
     # молча промахивается и оставляет хвост в общей базе.
@@ -1331,7 +1331,7 @@ def test_question_goes_to_agent(monkeypatch):
         called["q"] = q
         return FinalAnswer(summary="ответ", details=[], scenarios=[], source_keys=[]), set(), False
     monkeypatch.setattr("budget_agent.run_agent", fake_run_agent)
-    monkeypatch.setattr("budget_agent.parse_spending", lambda *a, **k: None)
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda *a, **k: None)
     out = route_message("сначала гасить кредит или копить подушку?", PRIV_H)
     assert "кредит" in called["q"]
     assert "ответ" in out
@@ -1341,7 +1341,7 @@ def test_question_with_amount_does_not_go_to_add_expense(monkeypatch):
     # судил о трате по наличию суммы в тексте — вопрос «Отпуск обойдётся в
     # 280 тысяч — тянем?» в 4 из 6 живых прогонов уходил в add_expense
     # вместо агента (demo_scenarios.md, сценарий 7). Реальный (не
-    # подменённый) вызов parse_spending — тест бессмыслен с замоканным
+    # подменённый) вызов parse_transaction — тест бессмыслен с замоканным
     # классификатором, он обязан бить по промпту, который чинили, а не по
     # обвязке вокруг него. run_agent подменён только затем, чтобы не ждать
     # полный SGR-цикл — сама проверка про то, что вопрос вообще дошёл сюда,
@@ -1356,7 +1356,7 @@ def test_question_with_amount_does_not_go_to_add_expense(monkeypatch):
     try:
         out = route_message("Отпуск обойдётся в 280 тысяч — тянем?", PRIV_H)
         assert "ответ агента" in out, \
-            "вопрос с суммой не должен перехватываться parse_spending как трата"
+            "вопрос с суммой не должен перехватываться parse_transaction как трата"
         with db() as conn:
             after_max = conn.execute(
                 "SELECT COALESCE(MAX(id), 0) FROM transactions").fetchone()[0]
@@ -1410,9 +1410,9 @@ def test_command_bypasses_dialog_state(monkeypatch):
 def test_awaiting_state_intercepts_before_spending_parse(monkeypatch):
     # Риск, названный в задаче: если бы трата проверялась раньше состояния,
     # ответ на висящий вопрос мог случайно распарситься как новая трата и
-    # уйти мимо ожидаемого пути. parse_spending здесь роняет тест, если его
+    # уйти мимо ожидаемого пути. parse_transaction здесь роняет тест, если его
     # вообще вызвали — только это и доказывает нужный порядок.
-    monkeypatch.setattr("budget_agent.parse_spending",
+    monkeypatch.setattr("budget_agent.parse_transaction",
                         lambda *a, **k: pytest.fail("трата не должна разбираться, "
                                                      "пока есть висящий вопрос"))
     set_state(89, "awaiting_category", {"amount": 500, "merchant": "ТЕСТ_Такси_89"})
@@ -1428,7 +1428,7 @@ def test_awaiting_state_intercepts_before_spending_parse(monkeypatch):
             conn.execute("DELETE FROM merchant_aliases WHERE alias='тест_такси_89' AND scope='common'")
 
 def test_awaiting_limit_intercepts_before_spending_parse(monkeypatch):
-    monkeypatch.setattr("budget_agent.parse_spending",
+    monkeypatch.setattr("budget_agent.parse_transaction",
                         lambda *a, **k: pytest.fail("трата не должна разбираться, "
                                                      "пока ждём ответ про лимит"))
     set_state(91, "awaiting_limit")
@@ -1498,7 +1498,7 @@ def test_awaiting_category_free_question_resets_and_answers(monkeypatch):
         return FinalAnswer(summary="на еду в этом месяце потрачено 12000 ₽",
                            details=[], scenarios=[], source_keys=[]), set(), False
     monkeypatch.setattr("budget_agent.run_agent", fake_run_agent)
-    monkeypatch.setattr("budget_agent.parse_spending", lambda *a, **k: None)
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda *a, **k: None)
     try:
         out = route_message("сколько мы потратили на еду?", ctx)
         assert "еду" in called["q"], "свой вопрос пользователя должен дойти до SGR-цикла"
@@ -1519,7 +1519,7 @@ def test_awaiting_limit_free_question_resets_and_answers(monkeypatch):
         return FinalAnswer(summary="подушки хватит на два месяца", details=[],
                            scenarios=[], source_keys=[]), set(), False
     monkeypatch.setattr("budget_agent.run_agent", fake_run_agent)
-    monkeypatch.setattr("budget_agent.parse_spending", lambda *a, **k: None)
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda *a, **k: None)
     try:
         out = route_message("хватит ли нам денег до зарплаты?", ctx)
         assert "подушки хватит на два месяца" in out
@@ -1571,8 +1571,8 @@ def test_awaiting_category_new_spending_resets_and_records_new(monkeypatch):
     # Старая трата теряется (с уведомлением), новая записывается.
     set_state(101, "awaiting_category", {"amount": 300, "merchant": "ТЕСТ_Мерчант_101_old"})
     ctx = Ctx("husband", "private", 101)
-    monkeypatch.setattr("budget_agent.parse_spending",
-                        lambda *a, **k: ParsedSpending(amount=500, merchant="ТЕСТ_Мерчант_101_new",
+    monkeypatch.setattr("budget_agent.parse_transaction",
+                        lambda *a, **k: ParsedTransaction(kind="expense", amount=500, counterparty="ТЕСТ_Мерчант_101_new",
                                                        currency="RUB"))
     monkeypatch.setattr("budget_agent.categorize",
                         lambda ctx, merchant: {"category": "Транспорт", "via": "alias", "suggestions": None})
@@ -1683,7 +1683,7 @@ def test_on_text_rejects_unknown_user_before_routing(monkeypatch):
 @pytest.mark.parametrize("amount", [0, -1, float("nan"), float("inf")])
 def test_parsed_spending_rejects_non_positive_or_non_finite_amount(amount):
     with pytest.raises(Exception):
-        ParsedSpending(amount=amount, merchant="x", currency="RUB")
+        ParsedTransaction(kind="expense", amount=amount, counterparty="x", currency="RUB")
 
 def test_on_text_report_attaches_keyboard(monkeypatch):
     monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(broadcast_steps=False))
@@ -1736,7 +1736,7 @@ def test_on_text_unexpected_exception_replies_without_leaking_internals(monkeypa
     def boom(*a, **k):
         raise RuntimeError(_FAKE_DSN_LEAK)
     monkeypatch.setattr("budget_agent.run_agent", boom)
-    monkeypatch.setattr("budget_agent.parse_spending", lambda *a, **k: None)
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda *a, **k: None)
     update, context = _FakeUpdate("сколько у нас денег"), _FakeContext()
     with caplog.at_level(logging.ERROR, logger="budget_agent.telegram"):
         asyncio.run(_on_text(update, context))   # не должно выбросить исключение
@@ -2429,7 +2429,7 @@ def test_agent_limit_change_asks_before_writing(monkeypatch):
     final = FinalAnswer(summary="Лимит изменён: было 140 000 ₽, стало 220 000 ₽.",
                         details=[], scenarios=[], source_keys=["family_data"])
     monkeypatch.setattr("budget_agent.structured_call", _script([step, final]))
-    monkeypatch.setattr("budget_agent.parse_spending", lambda *a, **k: None)
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda *a, **k: None)
     try:
         out = route_message("поставь разумный месячный лимит", ctx)
         assert "220 000" in out
@@ -2482,7 +2482,7 @@ def test_unrelated_message_drops_prepared_limit_change(monkeypatch):
     set_state(913, "awaiting_limit_confirm",
               {"amount": 220000, "old_amount": _CANONICAL_SEED_LIMIT})
     ctx = Ctx("husband", "private", 913)
-    monkeypatch.setattr("budget_agent.parse_spending", lambda *a, **k: None)
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda *a, **k: None)
     monkeypatch.setattr("budget_agent.run_agent",
                         lambda *a, **k: (FinalAnswer(summary="Вчера потрачено 3 200 ₽.",
                                                      details=[], scenarios=[],
@@ -2619,3 +2619,146 @@ def test_stale_message_from_stranger_gets_no_notice(monkeypatch):
     with pytest.raises(ApplicationHandlerStop):
         asyncio.run(_skip_stale(update, context))
     assert context.bot.sent == [], "посторонним бот не отвечает и здесь"
+
+
+# ===== 6. Доходная часть =====
+#
+# До этой правки доход существовал только в сид-данных: он входил в баланс
+# (get_balance считает по знаку categories.kind) и в прогноз кассового разрыва,
+# но спросить о нём было нечем, а сообщение «получил зарплату 250 тысяч»
+# молча уходило в SGR-цикл и ничего не записывало. Живая проверка 2026-08-28:
+# на вопрос «сколько мы заработали в прошлом месяце» агент ответил, что данных
+# нет, хотя 228 000 ₽ лежали в таблице транзакций.
+
+from budget_agent import (get_income, parse_transaction, ParsedTransaction, add_income,
+                          CategoryGuess)
+
+
+def _income_rows(chat_marker: str):
+    with db() as conn:
+        return conn.execute(
+            "SELECT amount, merchant FROM transactions WHERE merchant = %s", (chat_marker,)
+        ).fetchall()
+
+
+def test_get_income_returns_total_and_categories():
+    """Зеркало get_expenses по kind='income': сид даёт 228 000 ₽ в месяц."""
+    r = get_income(PRIV_H, "last_month")
+    assert r["source_keys"] == ["family_data"]
+    assert r["data"]["total"] == 228000
+    assert ("Зарплата", 228000.0) in r["data"]["by_category"]
+
+
+def test_get_income_is_registered_as_tool():
+    from budget_agent import TOOL_REGISTRY
+    assert "get_income" in TOOL_REGISTRY
+    r = TOOL_REGISTRY["get_income"](PRIV_H, {"period": "last_month"})
+    assert r["data"]["total"] == 228000
+
+
+def test_income_message_is_recorded_with_income_category(monkeypatch):
+    """Сообщение о доходе пишется как транзакция категории kind='income'."""
+    monkeypatch.setattr("budget_agent.parse_transaction",
+                        lambda *a, **k: ParsedTransaction(
+                            kind="income", amount=250000, counterparty="ТЕСТ_Доход_920",
+                            currency="RUB"))
+    ctx = Ctx("husband", "private", 920)
+    try:
+        out = route_message("получил зарплату 250 тысяч", ctx)
+        assert "250 000" in out
+        with db() as conn:
+            row = conn.execute(
+                """SELECT t.amount, c.kind, c.name FROM transactions t
+                   JOIN categories c ON c.id = t.category_id
+                   WHERE t.merchant = 'ТЕСТ_Доход_920'""").fetchone()
+        assert row is not None, "доход должен попасть в таблицу транзакций"
+        assert float(row[0]) == 250000
+        assert row[1] == "income", "категория дохода, а не расхода"
+    finally:
+        with db() as conn:
+            conn.execute("DELETE FROM transactions WHERE merchant='ТЕСТ_Доход_920'")
+            conn.execute("DELETE FROM dialog_state WHERE chat_id=920")
+
+
+def test_recorded_income_does_not_count_as_expense(monkeypatch):
+    """Доход не должен попадать в расходы месяца — иначе /status соврёт."""
+    monkeypatch.setattr("budget_agent.parse_transaction",
+                        lambda *a, **k: ParsedTransaction(
+                            kind="income", amount=99000, counterparty="ТЕСТ_Доход_921",
+                            currency="RUB"))
+    ctx = Ctx("husband", "private", 921)
+    before = get_expenses(PRIV_H, "this_month")["data"]["total"]
+    try:
+        route_message("пришла премия 99 тысяч", ctx)
+        after = get_expenses(PRIV_H, "this_month")["data"]["total"]
+        assert after == before, "доход не расход"
+    finally:
+        with db() as conn:
+            conn.execute("DELETE FROM transactions WHERE merchant='ТЕСТ_Доход_921'")
+            conn.execute("DELETE FROM dialog_state WHERE chat_id=921")
+
+
+def test_add_income_rejects_expense_category():
+    """Защита от перепутанного вида: доход нельзя записать расходной категорией."""
+    with pytest.raises(ValueError):
+        add_income(PRIV_H, 1000, "ТЕСТ_Доход_922", category="Продукты")
+
+
+def test_income_asks_when_source_is_unclear(monkeypatch):
+    """Когда категорий дохода несколько и модель не уверена — бот переспрашивает,
+    а ответ завершает запись."""
+    with db() as conn:
+        conn.execute("INSERT INTO categories (name, kind) VALUES ('ТЕСТ_Премия', 'income') "
+                     "ON CONFLICT DO NOTHING")
+    monkeypatch.setattr("budget_agent.parse_transaction",
+                        lambda *a, **k: ParsedTransaction(
+                            kind="income", amount=40000, counterparty="ТЕСТ_Источник_923",
+                            currency="RUB"))
+    monkeypatch.setattr("budget_agent.structured_call",
+                        lambda schema, msgs, **k: CategoryGuess(category="", confident=False))
+    ctx = Ctx("husband", "private", 923)
+    try:
+        ask = route_message("пришли деньги 40 тысяч", ctx)
+        assert "ТЕСТ_Премия" in ask, "в вопросе должны быть варианты категорий дохода"
+        assert get_state(923)["state"] == "awaiting_income_category"
+        with db() as conn:
+            assert conn.execute(
+                "SELECT 1 FROM transactions WHERE merchant='ТЕСТ_Источник_923'").fetchone() is None
+
+        done = route_message("ТЕСТ_Премия", ctx)
+        assert "40 000" in done
+        assert get_state(923)["state"] == "base"
+        with db() as conn:
+            row = conn.execute(
+                """SELECT c.name FROM transactions t JOIN categories c ON c.id = t.category_id
+                   WHERE t.merchant = 'ТЕСТ_Источник_923'""").fetchone()
+        assert row and row[0] == "ТЕСТ_Премия"
+    finally:
+        with db() as conn:
+            conn.execute("DELETE FROM transactions WHERE merchant='ТЕСТ_Источник_923'")
+            conn.execute("DELETE FROM dialog_state WHERE chat_id=923")
+            conn.execute("DELETE FROM merchant_aliases WHERE alias='тест_источник_923'")
+            conn.execute("DELETE FROM categories WHERE name='ТЕСТ_Премия'")
+
+
+def test_classifier_recognizes_income_on_live_model():
+    """Живой разбор, без подмены: промпт обязан отличать доход от траты."""
+    parsed = parse_transaction("получил зарплату 250 тысяч")
+    assert parsed is not None and parsed.kind == "income"
+    assert parsed.amount == 250000
+
+
+def test_every_registry_tool_is_expressible_in_next_step_schema():
+    """Реестр и схема шага обязаны совпадать.
+
+    Живой случай 2026-08-28: get_income добавили в TOOL_REGISTRY и в подсказку,
+    но забыли класс вызова в размеченном объединении ToolCall — модель
+    физически не могла назвать инструмент и на вопрос о доходе отвечала «данных
+    нет», обойдя базу. Реестр без схемы — мёртвый инструмент.
+    """
+    import json
+    from budget_agent import TOOL_REGISTRY, NextStep
+
+    schema = json.dumps(NextStep.model_json_schema(), ensure_ascii=False)
+    missing = [name for name in TOOL_REGISTRY if f'"{name}"' not in schema]
+    assert not missing, f"в реестре есть, а вызвать нельзя: {missing}"
