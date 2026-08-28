@@ -570,6 +570,29 @@ def get_expenses(ctx: Ctx, period: str, category: str | None = None) -> dict:
                      "by_category": by_category},
             "source_keys": ["family_data"]}
 
+def get_income(ctx: Ctx, period: str) -> dict:
+    """Доходы (kind='income') в рублях за период, с разбивкой по категориям —
+    зеркало get_expenses. Отдельный инструмент, а не флаг у расходов: у них
+    разные вопросы («сколько потратили на продукты» и «сколько заработали»),
+    и смешивать их в одном ответе значит складывать разные знаки.
+
+    Добавлен по живой обратной связи 2026-08-28: доход лежал в базе, входил в
+    баланс и в прогноз, но спросить о нём было нечем — агент отвечал «данных
+    нет», хотя данные были."""
+    start, end = _period_range(period)
+    with db() as conn:
+        rows = conn.execute(
+            """SELECT c.name, SUM(t.amount)
+               FROM transactions t JOIN categories c ON c.id = t.category_id
+               WHERE c.kind = 'income' AND t.currency = 'RUB' AND t.scope = ANY(%s)
+                 AND t.ts >= %s AND t.ts < %s
+               GROUP BY c.name ORDER BY c.name""",
+            (_scopes(ctx), start, end)).fetchall()
+    by_category = [(name, float(total)) for name, total in rows]
+    return {"data": {"period": period, "total": float(sum(v for _, v in by_category)),
+                     "by_category": by_category},
+            "source_keys": ["family_data"]}
+
 def get_recurring(ctx: Ctx) -> dict:
     """Активные регулярные платежи, видимые в текущей области."""
     with db() as conn:
@@ -756,6 +779,64 @@ class CategoryGuess(BaseModel):
     category: str
     confident: bool
 
+def add_income(ctx: Ctx, amount: float, source: str, *, category: str,
+               currency: str = "RUB", comment: str | None = None,
+               scope: str = "common") -> dict:
+    """Записывает доход. Отличий от add_expense два, и оба существенные.
+
+    Категория обязана быть доходной: расходная здесь означала бы, что сумма
+    уйдёт в минус при подсчёте баланса (знак несёт categories.kind), а в
+    /status зарплата встанет рядом с продуктами. Проверка явная, а не на
+    совести вызывающего.
+
+    Область по умолчанию общая — как у траты из свободного текста: семейный
+    бюджет считает доход общим, а личный доход вносят явным scope. Алиасы
+    источников не заводятся: у доходов их единицы, а сам источник человек
+    называет теми же словами («зарплата», «премия»), которые уже совпадают с
+    названием категории."""
+    if not math.isfinite(amount) or amount <= 0:
+        raise ValueError("сумма дохода должна быть конечным положительным числом")
+    with db() as conn:
+        cat_row = conn.execute(
+            "SELECT id, kind FROM categories WHERE name = %s", (category,)).fetchone()
+        if not cat_row:
+            raise ValueError(f"неизвестная категория: {category!r}")
+        if cat_row[1] != "income":
+            raise ValueError(f"категория {category!r} расходная — доход ею записать нельзя")
+        account_id = _pick_account(conn, scope, currency)
+        person_id = resolve_person_id(conn, ctx.person)
+        row = conn.execute(
+            """INSERT INTO transactions
+               (amount, currency, account_id, category_id, merchant, comment, scope, person_id)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+            (amount, currency, account_id, cat_row[0], source, comment, scope,
+             person_id)).fetchone()
+    return {"data": {"id": row[0], "category": category, "amount": float(amount)},
+            "source_keys": ["family_data"]}
+
+def _income_category_names() -> list[str]:
+    with db() as conn:
+        return [n for (n,) in conn.execute(
+            "SELECT name FROM categories WHERE kind='income' ORDER BY name").fetchall()]
+
+def categorize_income(ctx: Ctx, source_text: str) -> dict:
+    """Категория дохода по названию источника. Каскад короче расходного: у
+    доходов нет алиасов мерчантов, а когда доходная категория в базе одна,
+    выбирать не из чего — спрашивать человека было бы издевательством.
+    Несколько категорий — тот же приём, что у трат: модель предлагает, при
+    неуверенности переспрашиваем."""
+    names = _income_category_names()
+    if not names:
+        return {"category": None, "via": "ask", "suggestions": []}
+    if len(names) == 1:
+        return {"category": names[0], "via": "single", "suggestions": None}
+    guess = structured_call(CategoryGuess, [{"role": "user", "content":
+        f"Отнеси доход «{source_text}» к одной из категорий: {', '.join(names)}. "
+        f"confident=false, если уверенности нет."}])
+    if guess.confident and guess.category in names:
+        return {"category": guess.category, "via": "llm", "suggestions": None}
+    return {"category": None, "via": "ask", "suggestions": names}
+
 def categorize(ctx: Ctx, merchant_text: str) -> dict:
     """Каскад: алиас (0 токенов) → LLM → переспросить. Порядок обязателен.
     Личный алиас перекрывает общий: ORDER BY (m.scope = 'common') ставит
@@ -836,68 +917,83 @@ def add_expense(ctx: Ctx, amount: float, merchant: str, *, category: str,
 
 PositiveMoney = Annotated[FiniteFloat, Field(gt=0)]
 
-class _SpendingCheck(BaseModel):
-    """Внутренняя схема для structured_call: в отличие от публичной
-    ParsedSpending несёт ещё is_spending, чтобы модель могла сказать «это не
-    про трату» — публичный parse_spending превращает такой ответ в None.
-    Полей без умолчаний: если модель прислала is_spending=true, но не
-    заполнила amount/merchant/currency, это ошибка разбора (уйдёт в повтор
-    structured_call), а не молчаливая трата на 0 рублей без названия."""
+class _TransactionCheck(BaseModel):
+    """Внутренняя схема для structured_call: kind отделяет отчёт о трате от
+    отчёта о доходе и от всего остального — публичный parse_transaction
+    превращает "other" в None. Полей без умолчаний нет: если модель прислала
+    kind="expense", но не заполнила сумму или контрагента, это ошибка разбора
+    (уйдёт в повтор structured_call), а не молчаливая запись на 0 рублей."""
     model_config = ConfigDict(extra="forbid")
-    is_spending: bool
+    kind: Literal["expense", "income", "other"]
     amount: FiniteFloat
-    merchant: str
+    counterparty: str
     currency: Literal["RUB", "USD"]
 
     @model_validator(mode="after")
-    def validate_spending_amount(self):
-        if self.is_spending and self.amount <= 0:
-            raise ValueError("сумма расхода должна быть положительной")
+    def validate_transaction_amount(self):
+        if self.kind in ("expense", "income") and self.amount <= 0:
+            raise ValueError("сумма операции должна быть положительной")
         return self
 
-class ParsedSpending(BaseModel):
+class ParsedTransaction(BaseModel):
+    """Разобранная операция. counterparty — продавец для траты и источник для
+    дохода: одно поле, потому что дальше по коду это одна и та же колонка
+    transactions.merchant."""
     model_config = ConfigDict(extra="forbid")
+    kind: Literal["expense", "income"]
     amount: PositiveMoney
-    merchant: str
+    counterparty: str
     currency: Literal["RUB", "USD"]
 
-def parse_spending(text: str) -> ParsedSpending | None:
-    """Разбирает свободный текст о трате («потратил 3200 в ВкусВилле») в
-    amount/merchant/currency. None, если сообщение не о трате (вопрос,
-    команда, разговор) — тогда его дальше ведут по другому пути.
+def parse_transaction(text: str) -> ParsedTransaction | None:
+    """Разбирает свободный текст об операции: трата («потратил 3200 в
+    ВкусВилле») или доход («получил зарплату 250 тысяч»). None, если
+    сообщение не об операции (вопрос, команда, разговор) — тогда его дальше
+    ведут по другому пути.
 
-    Раунд ревью 2 задачи 12: наличие суммы в тексте — не признак траты.
+    Раунд ревью 2 задачи 12: наличие суммы в тексте — не признак операции.
     Классификатор раньше судил по этому одному сигналу и путал вопросы с
-    числом («Отпуск обойдётся в 280 тысяч — тянем?») с отчётом о
-    совершённом расходе — в 4 из 6 живых прогонов такая фраза уходила в
-    учёт расходов вместо агента (см. demo_scenarios.md, сценарий 7).
-    Признак траты — не число, а утверждение о том, что деньги УЖЕ
-    потрачены; промпт ниже называет модели оба класса сигналов явно и в
-    общем виде (по классам формулировок, а не по конкретным фразам)."""
-    guess = structured_call(_SpendingCheck, [{"role": "user", "content":
-        "Классифицируй сообщение: это отчёт об уже совершённой трате денег "
-        "или что-то другое (вопрос, прикидка, план, рассуждение)?\n\n"
+    числом («Отпуск обойдётся в 280 тысяч — тянем?») с отчётом о совершённом
+    расходе — в 4 из 6 живых прогонов такая фраза уходила в учёт расходов
+    вместо агента (см. demo_scenarios.md, сценарий 7). Признак операции — не
+    число, а утверждение о том, что деньги УЖЕ потрачены или УЖЕ получены;
+    промпт ниже называет модели оба класса сигналов явно и в общем виде (по
+    классам формулировок, а не по конкретным фразам).
+
+    Доход добавлен по живой обратной связи 2026-08-28: «получил зарплату 250
+    тысяч» раньше уходило в SGR-цикл и не записывалось никуда, а человек
+    читал ответ агента как подтверждение записи."""
+    guess = structured_call(_TransactionCheck, [{"role": "user", "content":
+        "Классифицируй сообщение: это отчёт об уже совершённой трате денег, "
+        "отчёт об уже полученном доходе, или что-то другое (вопрос, прикидка, "
+        "план, рассуждение)?\n\n"
         "Признак траты — утверждение о том, что деньги УЖЕ потрачены: "
         "обычно прошедшее время, совершённый вид («потратил», «купил», "
         "«заплатил», «отдал», «отправил»), с указанием, на что или где "
-        "потрачено. Само по себе число в тексте тратой не делает — вопрос "
-        "с суммой тратой не является, сколько бы чисел он ни содержал.\n\n"
-        "Признаки НЕ-траты, даже если в тексте есть сумма: вопросительный "
+        "потрачено.\n\n"
+        "Признак дохода — утверждение о том, что деньги УЖЕ получены: "
+        "«получил», «пришла», «выплатили», «перевели», «вернули долг», "
+        "«продал» — с указанием источника (зарплата, премия, аванс, "
+        "подработка, возврат).\n\n"
+        "Само по себе число в тексте операцией не делает — вопрос с суммой "
+        "операцией не является, сколько бы чисел он ни содержал.\n\n"
+        "Признаки НЕ-операции, даже если в тексте есть сумма: вопросительный "
         "знак и вопросительные слова («хватит ли», «потянем», «тянем», "
         "«сколько», «стоит ли», «можно ли»); будущее или сослагательное "
         "время («обойдётся», «будет стоить», «планируем», «собираемся», "
-        "«хотим»); прикидки, планы и рассуждения о будущих или "
-        "гипотетических тратах. Это не отчёт о трате, даже если по форме "
-        "похоже на одно предложение с суммой и местом.\n\n"
-        "Если сообщение — отчёт о совершённой трате: выдели сумму, "
-        "продавца и валюту (RUB или USD, по умолчанию RUB), is_spending=true. "
-        "Если это не про совершённую трату — is_spending=false, а amount=0, "
-        "merchant=\"\", currency=\"RUB\" (поля обязательны в любом случае, "
-        "даже когда это не трата). "
+        "«хотим», «должны заплатить», «ожидаем»); прикидки, планы и "
+        "рассуждения о будущих или гипотетических деньгах.\n\n"
+        "Если это отчёт о трате: kind=\"expense\", сумма в amount, продавец "
+        "или место в counterparty, валюта (RUB или USD, по умолчанию RUB). "
+        "Если это отчёт о доходе: kind=\"income\", сумма в amount, источник "
+        "в counterparty. Если ни то ни другое — kind=\"other\", amount=0, "
+        "counterparty=\"\", currency=\"RUB\" (поля обязательны в любом "
+        "случае). "
         f"Сообщение: «{text}»"}])
-    if not guess.is_spending:
+    if guess.kind == "other":
         return None
-    return ParsedSpending(amount=guess.amount, merchant=guess.merchant, currency=guess.currency)
+    return ParsedTransaction(kind=guess.kind, amount=guess.amount,
+                             counterparty=guess.counterparty, currency=guess.currency)
 
 # ===== 6. RAG =====
 # --- Парсер корпусов ---
@@ -1216,6 +1312,11 @@ class GetBudgetStatusCall(BaseModel):
     model_config = ConfigDict(extra="forbid")
     tool: Literal["get_budget_status"]
 
+class GetIncomeCall(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tool: Literal["get_income"]
+    period: str
+
 class ForecastCashflowCall(BaseModel):
     model_config = ConfigDict(extra="forbid")
     tool: Literal["forecast_cashflow"]
@@ -1224,7 +1325,7 @@ class ForecastCashflowCall(BaseModel):
 class SetBudgetLimitCall(BaseModel):
     model_config = ConfigDict(extra="forbid")
     tool: Literal["set_budget_limit"]
-    # PositiveMoney (см. раздел 5, ParsedSpending) — finite и > 0 уже на
+    # PositiveMoney (см. раздел 5, ParsedTransaction) — finite и > 0 уже на
     # уровне схемы; порог MIN_SENSIBLE_LIMIT (≥1000 ₽) проверяет сам
     # set_budget_limit, а не схема — схема отсекает мусор вроде NaN/минуса,
     # а не бизнес-правило "похоже на недопонятую сумму".
@@ -1260,7 +1361,8 @@ class NoToolCall(BaseModel):
     tool: Literal["none"]
 
 ToolCall = Annotated[Union[GetBalanceCall, GetExpensesCall, GetRecurringCall, GetGoalsCall,
-                           GetFamilyRuleCall, GetBudgetStatusCall, ForecastCashflowCall,
+                           GetFamilyRuleCall, GetBudgetStatusCall, GetIncomeCall,
+                           ForecastCashflowCall,
                            SetBudgetLimitCall, SearchKnowledgeCall, SearchHouseholdCall,
                            CbrGetRateCall, CbrInflationCall, CbrKeyRateCall, NoToolCall],
                      Field(discriminator="tool")]
@@ -1297,6 +1399,7 @@ TOOL_REGISTRY: dict[str, callable] = {
     "get_goals":         lambda ctx, a: get_goals(ctx),
     "get_family_rule":   lambda ctx, a: get_family_rule(ctx, a["key"]),
     "get_budget_status": lambda ctx, a: get_budget_status(ctx),
+    "get_income":        lambda ctx, a: get_income(ctx, a["period"]),
     "forecast_cashflow": lambda ctx, a: forecast_cashflow(ctx, a["months"]),
     "set_budget_limit":  lambda ctx, a: set_budget_limit(ctx, a["amount"]),
     "search_knowledge":  lambda ctx, a: _rag_result(search_knowledge(a["query"], ctx)),
@@ -1318,6 +1421,7 @@ _TOOL_HELP = """\
 - get_goals: финансовые цели, без аргументов
 - get_family_rule(key): семейное правило по ключу — large_purchase_threshold, emergency_fund_target, mandatory_monthly_expenses, vacation_indexation_pct, personal_money_share_pct, overspend_threshold
 - get_budget_status: лимит/потрачено/остаток за текущий календарный месяц, без аргументов
+- get_income(period): доходы за период с разбивкой по категориям; period тот же, что у get_expenses. Вопрос «сколько заработали/получили» — сюда, а не в поиск по документам
 - forecast_cashflow(months): помесячный прогноз рублёвого баланса на months месяцев вперёд
 - set_budget_limit(amount): подготовить смену месячного лимита трат (₽, готовое число — «250 тыс» это 250000, переведи сам, не присылай текст с единицами); лимит меняется НЕ сразу — человеку уходит вопрос с подтверждением, поэтому не пиши, что лимит уже изменён; откажет и вернёт ошибку, если сумма меньше 1000 ₽ (похоже на недопонятую величину) — тогда переспроси точную сумму у человека, а не вызывай инструмент повторно с той же цифрой
 - search_knowledge(query): поиск по общим принципам финансовой грамотности (документы PF)
@@ -2134,25 +2238,63 @@ def _try_complete_category(text: str, ctx: Ctx, pending: dict) -> str | None:
             f"в «{pending['merchant']}».").replace(",", " ")
 
 
-def _handle_spending(parsed: ParsedSpending, ctx: Ctx) -> str:
-    """Трата, разобранная parse_spending, идёт в каскад категоризации
+def _handle_spending(parsed: ParsedTransaction, ctx: Ctx) -> str:
+    """Трата, разобранная parse_transaction, идёт в каскад категоризации
     (categorize). scope='common': свободный текст о трате не несёт сигнала
     личное/общее, а бытовые траты (магазин, такси, кафе) в подавляющем
     большинстве общие. Личный scope не угадывается из текста — он
     используется там, где уже нужен явно (add_expense вызывается напрямую
     со scope='husband'/'wife', как в тестах раздела 5), а не выводится
     эвристикой над свободным сообщением."""
-    guess = categorize(ctx, parsed.merchant)
+    guess = categorize(ctx, parsed.counterparty)
     if guess["category"] is None:
         set_state(ctx.chat_id, "awaiting_category",
-                  {"amount": parsed.amount, "merchant": parsed.merchant, "currency": parsed.currency},
+                  {"amount": parsed.amount, "merchant": parsed.counterparty, "currency": parsed.currency},
                   user_id=ctx.user_id)
         options = ", ".join(guess["suggestions"])
-        return f"Не разобрал категорию для «{parsed.merchant}». Какая категория? Варианты: {options}."
-    r = add_expense(ctx, parsed.amount, parsed.merchant, category=guess["category"],
+        return f"Не разобрал категорию для «{parsed.counterparty}». Какая категория? Варианты: {options}."
+    r = add_expense(ctx, parsed.amount, parsed.counterparty, category=guess["category"],
                      currency=parsed.currency, scope="common", learn_alias=(guess["via"] == "llm"))
-    return (f"Записал: {guess['category']} — {r['data']['amount']:,.0f} {parsed.currency} "
-            f"в «{parsed.merchant}».").replace(",", " ")
+    return (f"Записал: {guess['category']} — {_rub(r['data']['amount'])} {parsed.currency} "
+            f"в «{parsed.counterparty}».")
+
+
+def _handle_income(parsed: ParsedTransaction, ctx: Ctx) -> str:
+    """Доход, разобранный parse_transaction. Тот же порядок, что у траты:
+    определить категорию, записать, подтвердить суммой и категорией — чтобы
+    человек видел, что именно записано, а не «принято»."""
+    guess = categorize_income(ctx, parsed.counterparty)
+    if guess["category"] is None:
+        if not guess["suggestions"]:
+            return ("Доход записать некуда: в базе нет ни одной доходной категории. "
+                    "Заведите её, и я запишу.")
+        set_state(ctx.chat_id, "awaiting_income_category",
+                  {"amount": parsed.amount, "source": parsed.counterparty,
+                   "currency": parsed.currency},
+                  user_id=ctx.user_id)
+        options = ", ".join(guess["suggestions"])
+        return (f"Не разобрал, что за доход «{parsed.counterparty}». "
+                f"Какая категория? Варианты: {options}.")
+    r = add_income(ctx, parsed.amount, parsed.counterparty, category=guess["category"],
+                   currency=parsed.currency)
+    return (f"Записал доход: {guess['category']} — {_rub(r['data']['amount'])} "
+            f"{parsed.currency}, источник «{parsed.counterparty}».")
+
+
+def _try_complete_income_category(text: str, ctx: Ctx, pending: dict) -> str | None:
+    """Завершает awaiting_income_category. Сравнение с названием категории
+    регистронезависимое, как у трат; несовпадение — None, и route_message
+    ведёт сообщение дальше обычными ступенями."""
+    answer = text.strip()
+    names = _income_category_names()
+    match = next((n for n in names if n.lower() == answer.lower()), None)
+    if match is None:
+        return None
+    r = add_income(ctx, pending["amount"], pending["source"], category=match,
+                   currency=pending.get("currency", "RUB"))
+    set_state(ctx.chat_id, "base", user_id=ctx.user_id)
+    return (f"Записал доход: {match} — {_rub(r['data']['amount'])} "
+            f"{pending.get('currency', 'RUB')}, источник «{pending['source']}».")
 
 
 def _reset_notice(state: str, pending: dict | None) -> str:
@@ -2167,6 +2309,9 @@ def _reset_notice(state: str, pending: dict | None) -> str:
                 f"не сохранена — категория не распознана.\n\n").replace(",", " ")
     if state == "awaiting_limit":
         return "Хорошо, к лимиту вернёмся позже — можно задать его снова через /start.\n\n"
+    if state == "awaiting_income_category" and pending:
+        return (f"Незаписанный доход {_rub(pending['amount'])} ₽ из «{pending['source']}» "
+                f"не сохранён — категория не распознана.\n\n")
     if state == "awaiting_limit_confirm" and pending:
         old = pending.get("old_amount")
         tail = f", прежние {_rub(old)} ₽" if old is not None else ""
@@ -2185,9 +2330,9 @@ def route_message(text: str, ctx: Ctx, on_step=None) -> "str | tuple[str, dict]"
       1. команда — по префиксу "/", не зависит от состояния диалога;
       2. ответ на висящий вопрос диалога (dialog_state) — если не отфильтровать
          здесь раньше проверки траты, "Продукты" в ответ на вопрос о категории
-         уйдёт в parse_spending и разберётся (или нет) как отдельная,
+         уйдёт в parse_transaction и разберётся (или нет) как отдельная,
          бессмысленная трата;
-      3. сообщение о трате (parse_spending);
+      3. сообщение о совершённой операции — трате или доходе (parse_transaction);
       4. содержательный вопрос — SGR-цикл (run_agent).
 
     Порядок ветвей не переставляется. Раунд ревью 1 уточнил, что происходит
@@ -2228,6 +2373,12 @@ def route_message(text: str, ctx: Ctx, on_step=None) -> "str | tuple[str, dict]"
             return done
         notice = _reset_notice(st["state"], st["pending"])
         set_state(ctx.chat_id, "base", user_id=ctx.user_id)
+    elif st["state"] == "awaiting_income_category":
+        done = _try_complete_income_category(text, ctx, st["pending"])
+        if done is not None:
+            return done
+        notice = _reset_notice(st["state"], st["pending"])
+        set_state(ctx.chat_id, "base", user_id=ctx.user_id)
     elif st["state"] == "awaiting_category":
         done = _try_complete_category(text, ctx, st["pending"])
         if done is not None:
@@ -2235,9 +2386,10 @@ def route_message(text: str, ctx: Ctx, on_step=None) -> "str | tuple[str, dict]"
         notice = _reset_notice(st["state"], st["pending"])
         set_state(ctx.chat_id, "base", user_id=ctx.user_id)
 
-    parsed = parse_spending(text)
+    parsed = parse_transaction(text)
     if parsed:
-        return notice + _handle_spending(parsed, ctx)
+        handle = _handle_income if parsed.kind == "income" else _handle_spending
+        return notice + handle(parsed, ctx)
 
     ans, registry, any_empty_result = run_agent(text, ctx, on_step=on_step)
     staged = get_state(ctx.chat_id, ctx.user_id)
