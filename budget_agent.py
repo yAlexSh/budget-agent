@@ -568,10 +568,12 @@ def get_expenses(ctx: Ctx, period: str, category: str | None = None) -> dict:
     total = float(sum(v for _, v in by_category))
     return {"data": {"period": period, "category": category, "total": total,
                      "by_category": by_category,
-                     "other_currencies": _other_currency_totals("expense", _scopes(ctx), start, end)},
+                     "other_currencies": _other_currency_totals("expense", _scopes(ctx), start, end,
+                                                                 category)},
             "source_keys": ["family_data"]}
 
-def _other_currency_totals(kind: str, scopes: list[str], start, end) -> list[tuple[str, float]]:
+def _other_currency_totals(kind: str, scopes: list[str], start, end,
+                            category: str | None = None) -> list[tuple[str, float]]:
     """Суммы операций периода в валютах, кроме рубля.
 
     Инструменты периода считают в рублях: конвертация — отдельный вопрос
@@ -579,15 +581,24 @@ def _other_currency_totals(kind: str, scopes: list[str], start, end) -> list[tup
     нельзя. Но молчать о валютной операции тоже нельзя: ревью PR #20 показало
     живой сценарий, где доход в долларах записан, подтверждён человеку и
     после этого не виден ни в одном ответе про заработок. Поэтому валюта
-    возвращается отдельным списком, а вызывающий обязан её назвать."""
+    возвращается отдельным списком, а вызывающий обязан её назвать.
+
+    category сужает выборку так же, как в рублёвой части: ревью PR #21
+    показало, что фильтр применялся только к рублям, и вопрос «сколько
+    потратили на продукты» приносил доллары, потраченные на такси."""
+    params: list = [kind, scopes, start, end]
+    cat_filter = ""
+    if category:
+        cat_filter = " AND c.name = %s"
+        params.append(category)
     with db() as conn:
         rows = conn.execute(
-            """SELECT t.currency, SUM(t.amount)
-               FROM transactions t JOIN categories c ON c.id = t.category_id
-               WHERE c.kind = %s AND t.currency <> 'RUB' AND t.scope = ANY(%s)
-                 AND t.ts >= %s AND t.ts < %s
-               GROUP BY t.currency ORDER BY t.currency""",
-            (kind, scopes, start, end)).fetchall()
+            f"""SELECT t.currency, SUM(t.amount)
+                FROM transactions t JOIN categories c ON c.id = t.category_id
+                WHERE c.kind = %s AND t.currency <> 'RUB' AND t.scope = ANY(%s)
+                  AND t.ts >= %s AND t.ts < %s{cat_filter}
+                GROUP BY t.currency ORDER BY t.currency""",
+            params).fetchall()
     return [(cur, float(total)) for cur, total in rows]
 
 def get_income(ctx: Ctx, period: str) -> dict:
