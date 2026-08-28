@@ -567,8 +567,28 @@ def get_expenses(ctx: Ctx, period: str, category: str | None = None) -> dict:
     by_category = [(name, float(total)) for name, total in rows]
     total = float(sum(v for _, v in by_category))
     return {"data": {"period": period, "category": category, "total": total,
-                     "by_category": by_category},
+                     "by_category": by_category,
+                     "other_currencies": _other_currency_totals("expense", _scopes(ctx), start, end)},
             "source_keys": ["family_data"]}
+
+def _other_currency_totals(kind: str, scopes: list[str], start, end) -> list[tuple[str, float]]:
+    """Суммы операций периода в валютах, кроме рубля.
+
+    Инструменты периода считают в рублях: конвертация — отдельный вопрос
+    (курс на какую дату, по ЦБ или банковский), и подмешивать её в итог
+    нельзя. Но молчать о валютной операции тоже нельзя: ревью PR #20 показало
+    живой сценарий, где доход в долларах записан, подтверждён человеку и
+    после этого не виден ни в одном ответе про заработок. Поэтому валюта
+    возвращается отдельным списком, а вызывающий обязан её назвать."""
+    with db() as conn:
+        rows = conn.execute(
+            """SELECT t.currency, SUM(t.amount)
+               FROM transactions t JOIN categories c ON c.id = t.category_id
+               WHERE c.kind = %s AND t.currency <> 'RUB' AND t.scope = ANY(%s)
+                 AND t.ts >= %s AND t.ts < %s
+               GROUP BY t.currency ORDER BY t.currency""",
+            (kind, scopes, start, end)).fetchall()
+    return [(cur, float(total)) for cur, total in rows]
 
 def get_income(ctx: Ctx, period: str) -> dict:
     """Доходы (kind='income') в рублях за период, с разбивкой по категориям —
@@ -590,7 +610,8 @@ def get_income(ctx: Ctx, period: str) -> dict:
             (_scopes(ctx), start, end)).fetchall()
     by_category = [(name, float(total)) for name, total in rows]
     return {"data": {"period": period, "total": float(sum(v for _, v in by_category)),
-                     "by_category": by_category},
+                     "by_category": by_category,
+                     "other_currencies": _other_currency_totals("income", _scopes(ctx), start, end)},
             "source_keys": ["family_data"]}
 
 def get_recurring(ctx: Ctx) -> dict:
@@ -657,7 +678,8 @@ def get_budget_status(ctx: Ctx) -> dict:
     last_day = end - _dt.timedelta(days=1)
     days_left = max(0, (last_day - today).days)
     return {"data": {"limit": limit, "spent": spent, "remaining": remaining,
-                     "percent": percent, "days_left": days_left},
+                     "percent": percent, "days_left": days_left,
+                     "other_currencies": _other_currency_totals("expense", scopes, start, end)},
             "source_keys": ["family_data"]}
 
 # MIN_SENSIBLE_LIMIT (порог осмысленности лимита в рублях) определена в
@@ -1416,12 +1438,12 @@ SIDE_EFFECT_TOOLS = {"set_budget_limit"}
 
 _TOOL_HELP = """\
 - get_balance: остатки по счетам, без аргументов
-- get_expenses(period, category=None): траты за период; period — 'yesterday' | 'this_month' | 'last_month' | 'YYYY-MM'
+- get_expenses(period, category=None): траты за период; period — 'yesterday' | 'this_month' | 'last_month' | 'YYYY-MM'; итог рублёвый, непустой other_currencies называй отдельно
 - get_recurring: активные регулярные платежи, без аргументов
 - get_goals: финансовые цели, без аргументов
 - get_family_rule(key): семейное правило по ключу — large_purchase_threshold, emergency_fund_target, mandatory_monthly_expenses, vacation_indexation_pct, personal_money_share_pct, overspend_threshold
 - get_budget_status: лимит/потрачено/остаток за текущий календарный месяц, без аргументов
-- get_income(period): доходы за период с разбивкой по категориям; period тот же, что у get_expenses. Вопрос «сколько заработали/получили» — сюда, а не в поиск по документам
+- get_income(period): доходы за период с разбивкой по категориям; period тот же, что у get_expenses. Вопрос «сколько заработали/получили» — сюда, а не в поиск по документам. Итог рублёвый; если в ответе непустой other_currencies, назови эти суммы отдельно — они в рублёвый итог не входят
 - forecast_cashflow(months): помесячный прогноз рублёвого баланса на months месяцев вперёд
 - set_budget_limit(amount): подготовить смену месячного лимита трат (₽, готовое число — «250 тыс» это 250000, переведи сам, не присылай текст с единицами); лимит меняется НЕ сразу — человеку уходит вопрос с подтверждением, поэтому не пиши, что лимит уже изменён; откажет и вернёт ошибку, если сумма меньше 1000 ₽ (похоже на недопонятую величину) — тогда переспроси точную сумму у человека, а не вызывай инструмент повторно с той же цифрой
 - search_knowledge(query): поиск по общим принципам финансовой грамотности (документы PF)
@@ -1893,26 +1915,36 @@ def set_state(chat_id: int, state: str, pending: dict | None = None,
              _age_seconds))
 
 
+def _currency_note(rows: list[tuple[str, float]]) -> str:
+    """Строка-приписка о валютных операциях периода. Пустая, когда их нет —
+    лишний хвост в обычном ответе не нужен."""
+    if not rows:
+        return ""
+    parts = ", ".join(f"{_rub(total)} {cur}" for cur, total in rows)
+    return f"\nВ валюте отдельно: {parts} — в рублёвый итог не входит."
+
 def render_status(ctx: Ctx) -> str:
     """Лимит месяца, потрачено, остаток — чистый SQL и форматирование, без
     единого обращения к модели: команды остаются мгновенными и не зависят
     от доступности LLM."""
     d = get_budget_status(ctx)["data"]
-    return (f"Потрачено {d['spent']:,.0f} ₽ из {d['limit']:,.0f} ₽ ({d['percent']:.0f}%).\n"
-            f"Остаток {d['remaining']:,.0f} ₽ на {d['days_left']} дн.").replace(",", " ")
+    return ((f"Потрачено {d['spent']:,.0f} ₽ из {d['limit']:,.0f} ₽ ({d['percent']:.0f}%).\n"
+             f"Остаток {d['remaining']:,.0f} ₽ на {d['days_left']} дн.").replace(",", " ")
+            + _currency_note(d["other_currencies"]))
 
 def render_report(ctx: Ctx) -> tuple[str, dict]:
     """Расходы за текущий месяц по категориям плюс кнопка «Совет от ИИ» —
     сама кнопка ведёт в тяжёлый SGR-путь, здесь только SQL и текст."""
-    rows = get_expenses(ctx, period="this_month", category=None)["data"]["by_category"]
+    d = get_expenses(ctx, period="this_month", category=None)["data"]
+    rows, note = d["by_category"], _currency_note(d["other_currencies"])
     markup = {"inline_keyboard": [[{"text": "Совет от ИИ", "callback_data": "ai_advice"}]]}
     if not rows:
         # Пустой this_month (например, в первые дни месяца) раньше давал
         # заголовок без единой строки под ним — читалось как оборванный
         # вывод, а не как «трат пока нет».
-        return "В этом месяце трат ещё не было.", markup
+        return "В этом месяце трат ещё не было." + note, markup
     lines = [f"{name}: {total:,.0f} ₽".replace(",", " ") for name, total in rows]
-    return "Расходы за месяц:\n" + "\n".join(lines), markup
+    return "Расходы за месяц:\n" + "\n".join(lines) + note, markup
 
 START_TEXT = (
     "Привет! Я веду семейный бюджет: показываю, сколько потрачено и сколько "
