@@ -2828,3 +2828,29 @@ def test_income_without_currency_operations_reports_empty_list():
     """Когда валютных операций нет, поле пустое — не None и не отсутствует."""
     d = get_income(PRIV_H, "last_month")["data"]
     assert d["other_currencies"] == []
+
+
+def test_currency_totals_respect_category_filter():
+    """Валютная часть обязана слушаться фильтра категории.
+
+    Ревью PR #21: category применялась только к рублёвому запросу, а
+    other_currencies собирал валютные траты всех категорий — вопрос «сколько
+    потратили на продукты» мог вернуть доллары, потраченные на такси.
+    """
+    try:
+        add_expense(PRIV_H, 321, "ТЕСТ_Такси_USD", category="Транспорт", currency="USD")
+
+        d_all = get_expenses(PRIV_H, "this_month")["data"]
+        assert ("USD", 321.0) in d_all["other_currencies"], \
+            "без фильтра валютная трата обязана быть видна"
+
+        d_food = get_expenses(PRIV_H, "this_month", category="Продукты")["data"]
+        assert all(cur != "USD" or total != 321.0 for cur, total in d_food["other_currencies"]), \
+            "валютная трата из «Транспорта» не должна попадать в ответ про «Продукты»"
+
+        d_transport = get_expenses(PRIV_H, "this_month", category="Транспорт")["data"]
+        assert ("USD", 321.0) in d_transport["other_currencies"], \
+            "в своей категории валютная трата обязана остаться"
+    finally:
+        with db() as conn:
+            conn.execute("DELETE FROM transactions WHERE merchant='ТЕСТ_Такси_USD'")
