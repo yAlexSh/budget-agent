@@ -360,26 +360,26 @@ rect.c-bg-rect { fill: var(--bg); }
         <text x="325" y="366" class="t-muted" font-size="9" text-anchor="middle">поллинг, страж очереди</text>
         </g>
 
-        <g id="node-fast" data-node-id="fast" data-node-label="Быстрый путь" tabindex="0" role="button" aria-label="Focus Быстрый путь, /status, /report — 0,02 с, Один файл budget_agent.py" aria-pressed="false" data-node-kind="backend" data-node-sublabel="/status, /report — 0,02 с" data-node-context="Один файл budget_agent.py">
-          <title>Быстрый путь · /status, /report — 0,02 с · Один файл budget_agent.py</title>
+        <g id="node-fast" data-node-id="fast" data-node-label="Быстрый путь" tabindex="0" role="button" aria-label="Focus Быстрый путь, /status, /balance, /report, Один файл budget_agent.py" aria-pressed="false" data-node-kind="backend" data-node-sublabel="/status, /balance, /report" data-node-context="Один файл budget_agent.py">
+          <title>Быстрый путь · /status, /balance, /report · Один файл budget_agent.py</title>
           <rect x="470" y="160" width="150" height="64" rx="6" class="c-mask"/>
           <rect x="470" y="160" width="150" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(476 166) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" x="545" y="190" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Быстрый путь</text>
-        <text x="545" y="206" class="t-muted" font-size="9" text-anchor="middle">/status, /report — 0,02 с</text>
+        <text x="545" y="206" class="t-muted" font-size="9" text-anchor="middle">/status, /balance, /report</text>
         </g>
 
-        <g id="node-router" data-node-id="router" data-node-label="Маршрутизация" tabindex="0" role="button" aria-label="Focus Маршрутизация, четыре ступени разбора, Один файл budget_agent.py" aria-pressed="false" data-node-kind="backend" data-node-sublabel="четыре ступени разбора" data-node-context="Один файл budget_agent.py">
-          <title>Маршрутизация · четыре ступени разбора · Один файл budget_agent.py</title>
+        <g id="node-router" data-node-id="router" data-node-label="Маршрутизация" tabindex="0" role="button" aria-label="Focus Маршрутизация, команда, операция, вопрос, Один файл budget_agent.py" aria-pressed="false" data-node-kind="backend" data-node-sublabel="команда, операция, вопрос" data-node-context="Один файл budget_agent.py">
+          <title>Маршрутизация · команда, операция, вопрос · Один файл budget_agent.py</title>
           <rect x="470" y="320" width="150" height="64" rx="6" class="c-mask"/>
           <rect x="470" y="320" width="150" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(476 326) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" x="545" y="350" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Маршрутизация</text>
-        <text x="545" y="366" class="t-muted" font-size="9" text-anchor="middle">четыре ступени разбора</text>
+        <text x="545" y="366" class="t-muted" font-size="9" text-anchor="middle">команда, операция, вопрос</text>
         </g>
 
         <g id="node-dialog" data-node-id="dialog" data-node-label="dialog_state" tabindex="0" role="button" aria-label="Focus dialog_state, висящий вопрос, TTL 1 ч, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="висящий вопрос, TTL 1 ч" data-node-context="Architecture component">
@@ -416,15 +416,15 @@ rect.c-bg-rect { fill: var(--bg); }
         <text x="765" y="366" class="t-muted" font-size="9" text-anchor="middle">run_agent, до 8 шагов</text>
         </g>
 
-        <g id="node-tools" data-node-id="tools" data-node-label="Инструменты" tabindex="0" role="button" aria-label="Focus Инструменты, реестр из 13 функций, Один файл budget_agent.py" aria-pressed="false" data-node-kind="backend" data-node-sublabel="реестр из 13 функций" data-node-context="Один файл budget_agent.py">
-          <title>Инструменты · реестр из 13 функций · Один файл budget_agent.py</title>
+        <g id="node-tools" data-node-id="tools" data-node-label="Инструменты" tabindex="0" role="button" aria-label="Focus Инструменты, реестр TOOL_REGISTRY, Один файл budget_agent.py" aria-pressed="false" data-node-kind="backend" data-node-sublabel="реестр TOOL_REGISTRY" data-node-context="Один файл budget_agent.py">
+          <title>Инструменты · реестр TOOL_REGISTRY · Один файл budget_agent.py</title>
           <rect x="910" y="320" width="150" height="64" rx="6" class="c-mask"/>
           <rect x="910" y="320" width="150" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(916 326) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" x="985" y="350" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Инструменты</text>
-        <text x="985" y="366" class="t-muted" font-size="9" text-anchor="middle">реестр из 13 функций</text>
+        <text x="985" y="366" class="t-muted" font-size="9" text-anchor="middle">реестр TOOL_REGISTRY</text>
         </g>
 
         <g id="node-mcp" data-node-id="mcp" data-node-label="MCP Банка России" tabindex="0" role="button" aria-label="Focus MCP Банка России, stdio, дочерний процесс, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="stdio, дочерний процесс" data-node-context="Architecture component">
