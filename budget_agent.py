@@ -3160,7 +3160,22 @@ def main() -> None:
         return send_scheduled_report()
     if a.question:
         ctx = Ctx(person=a.person, chat_type=a.chat, chat_id=0)
-        result = handle_request(a.question, ctx)
+        # Тот же принцип, что у _on_text в Telegram: человек, задавший вопрос,
+        # получает понятное сообщение об ошибке, а не сырой traceback (найдено
+        # протоколом тестирования финального задания: при недоступной модели
+        # CLI вываливал стек AuthenticationError прямо в терминал). Полный
+        # стек — в журнале обращений (handle_request записал error до
+        # re-raise) и в техническом логе; наружу — одна строка и код 1.
+        try:
+            result = handle_request(a.question, ctx)
+        except Exception as e:
+            # Стек НЕ дублируется в stderr: в терминале stderr виден тому же
+            # человеку, и «понятная строка + стек рядом» ничем не лучше
+            # просто стека. Полный след уже в журнале обращений.
+            print("Техническая ошибка: не удалось обработать вопрос "
+                  f"({type(e).__name__}). Подробности в журнале обращений; "
+                  "проверьте доступность модели командой --check-backend.")
+            sys.exit(1)
         # route_message может вернуть (текст, inline_keyboard) для команд с
         # кнопкой (например /report) — CLI не умеет рисовать кнопки, поэтому
         # печатает только текстовую часть, а не сырой кортеж.
