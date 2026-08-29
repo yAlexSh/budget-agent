@@ -25,6 +25,12 @@ load_dotenv()
 
 # ===== 1. КОНФИГУРАЦИЯ =====
 
+# Версия финальной сборки — попадает в каждую строку журнала обращений и в
+# карточку версии-кандидата. Меняется руками при выпуске новой версии,
+# автоматики нет намеренно: номер версии — управленческое решение, а не
+# побочный эффект коммита.
+APP_VERSION = "1.0-rc1"
+
 @dataclass(frozen=True)
 class Settings:
     provider: str
@@ -354,6 +360,16 @@ CREATE TABLE IF NOT EXISTS dialog_state (
     state text NOT NULL DEFAULT 'base', pending jsonb,
     updated_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (chat_id, user_id));
+
+CREATE TABLE IF NOT EXISTS request_log (
+    id serial PRIMARY KEY, request_id text UNIQUE NOT NULL,
+    received_at timestamptz NOT NULL DEFAULT now(),
+    chat_id bigint, user_id bigint, person text, chat_type text,
+    input_type text NOT NULL DEFAULT 'text',
+    question text NOT NULL,
+    status text NOT NULL CHECK (status IN ('answered','refused','error')),
+    answer text, source_keys text[], error text,
+    model text, app_version text, duration_ms int);
 
 CREATE TABLE IF NOT EXISTS documents (
     id serial PRIMARY KEY, document_key text UNIQUE NOT NULL,
@@ -1658,6 +1674,13 @@ def _is_empty_tool_result(data) -> bool:
     return False
 
 
+# Текст контролируемого срыва финализации — константа, а не литерал в месте
+# употребления: журнал обращений (handle_request) отличает этот случай от
+# обычного ответа сравнением с константой, и совпадение гарантировано кодом,
+# а не тем, что два литерала в разных местах файла не разъехались.
+FINALIZE_FALLBACK_SUMMARY = ("Не удалось сформулировать связный ответ — модель не справилась с "
+                             "финализацией. Ниже то, что удалось собрать по ходу шагов.")
+
 def run_agent(question: str, ctx: Ctx, on_step: "callable | None" = None,
               max_steps: int = 8) -> tuple[FinalAnswer, set[str], bool]:
     """SGR-цикл. Возвращает (FinalAnswer, registry, any_empty_result).
@@ -1749,8 +1772,7 @@ def run_agent(question: str, ctx: Ctx, on_step: "callable | None" = None,
         # честный ответ о том, что не получилось, с тем, что успели собрать,
         # а не необработанное исключение там, где пользователь ждёт ответ.
         final = FinalAnswer(
-            summary="Не удалось сформулировать связный ответ — модель не справилась с "
-                    "финализацией. Ниже то, что удалось собрать по ходу шагов.",
+            summary=FINALIZE_FALLBACK_SUMMARY,
             details=[f"{h['tool']}: {json.dumps(h['result'], ensure_ascii=False, default=str)}"
                      for h in history if h.get("tool")],
             scenarios=[], source_keys=sorted(registry))
@@ -2403,7 +2425,8 @@ def _reset_notice(state: str, pending: dict | None) -> str:
     return ""
 
 
-def route_message(text: str, ctx: Ctx, on_step=None) -> "str | tuple[str, dict]":
+def route_message(text: str, ctx: Ctx, on_step=None,
+                  outcome: "dict | None" = None) -> "str | tuple[str, dict]":
     """Единая точка входа для Telegram- и CLI-слоя. Порядок ветвей
     обязателен и закреплён тестами по каждой границе отдельно
     (test_command_bypasses_dialog_state,
@@ -2475,6 +2498,21 @@ def route_message(text: str, ctx: Ctx, on_step=None) -> "str | tuple[str, dict]"
         return notice + handle(parsed, ctx)
 
     ans, registry, any_empty_result = run_agent(text, ctx, on_step=on_step)
+    if outcome is not None:
+        # Статус для журнала обращений считает код, не модель (handle_request).
+        # error — срыв финализации: run_agent уже вернул честную сборку из
+        # сырых шагов, сравнение с константой это фиксирует. refused —
+        # инструменты отработали, хотя бы один честно вернул пустоту и ни
+        # один не дал источника: агенту нечем подтвердить ответ. Остальное —
+        # answered; ветки команд/трат/диалога выше не заполняют outcome и
+        # получают answered умолчанием в handle_request.
+        outcome["source_keys"] = sorted(registry)
+        if ans.summary == FINALIZE_FALLBACK_SUMMARY:
+            outcome["status"] = "error"
+            outcome["error"] = ("финализация SGR не удалась — ответ собран из "
+                                "сырых результатов шагов")
+        elif any_empty_result and not registry:
+            outcome["status"] = "refused"
     staged = get_state(ctx.chat_id, ctx.user_id)
     if staged["state"] == "awaiting_limit_confirm":
         # Агент подготовил смену лимита. Наружу уходит детерминированный
@@ -2482,6 +2520,107 @@ def route_message(text: str, ctx: Ctx, on_step=None) -> "str | tuple[str, dict]"
         # рапортует о свершившейся смене, которой ещё не было.
         return notice + _limit_confirmation_question(staged["pending"])
     return notice + render_answer(ans, ctx, text, registry, any_empty_result)
+
+
+# ----- журнал обращений -----
+#
+# Требование финального задания: для каждого обращения — request_id, кто
+# спросил, вопрос, ответ или отказ, статус, источники, ошибка; запись и для
+# отказов, и для сбоев; недоступный журнал не лишает человека готового
+# ответа. Пишут его только пользовательские точки входа (Telegram, CLI) через
+# handle_request; прямые вызовы route_message — тесты, run_demo — журнал не
+# трогают: он фиксирует обращения людей, а не прогоны проверок. Неавторизо-
+# ванные сообщения сюда не попадают: бот их не обрабатывает, а хранить
+# тексты посторонних — лишние персональные данные в журнале.
+
+_REQUEST_LOG_DDL = """CREATE TABLE IF NOT EXISTS request_log (
+    id serial PRIMARY KEY, request_id text UNIQUE NOT NULL,
+    received_at timestamptz NOT NULL DEFAULT now(),
+    chat_id bigint, user_id bigint, person text, chat_type text,
+    input_type text NOT NULL DEFAULT 'text',
+    question text NOT NULL,
+    status text NOT NULL CHECK (status IN ('answered','refused','error')),
+    answer text, source_keys text[], error text,
+    model text, app_version text, duration_ms int)"""
+_request_log_ready = False
+
+_journal_logger = logging.getLogger("budget_agent.journal")
+
+def _model_label() -> str:
+    s = SETTINGS
+    name = s.router_model if s.provider == "router" else s.ollama_model
+    return f"{s.provider}:{name}"
+
+def log_request(entry: dict) -> None:
+    """Пишет одну строку журнала обращений. Никогда не поднимает исключение:
+    сбой журнала не должен отнимать уже сформированный ответ — ошибка записи
+    уходит в технический лог, и только туда. DDL выполняется лениво один раз
+    на процесс: у установок, поднятых до появления журнала, таблицы нет, а
+    create_schema прогоняется только на пустой базе (additive-миграция тем же
+    приёмом CREATE TABLE IF NOT EXISTS, что и вся схема)."""
+    global _request_log_ready
+    try:
+        with db() as conn:
+            if not _request_log_ready:
+                conn.execute(_REQUEST_LOG_DDL)
+                _request_log_ready = True
+            conn.execute(
+                """INSERT INTO request_log (request_id, chat_id, user_id, person,
+                       chat_type, input_type, question, status, answer,
+                       source_keys, error, model, app_version, duration_ms)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (entry["request_id"], entry.get("chat_id"), entry.get("user_id"),
+                 entry.get("person"), entry.get("chat_type"),
+                 entry.get("input_type", "text"), entry["question"],
+                 entry["status"], entry.get("answer"),
+                 entry.get("source_keys") or [], entry.get("error"),
+                 entry.get("model"), entry.get("app_version"),
+                 entry.get("duration_ms")))
+    except Exception:
+        _journal_logger.exception("запись журнала обращений не удалась "
+                                  "(request_id=%s)", entry.get("request_id"))
+
+def handle_request(text: str, ctx: Ctx, on_step=None,
+                   input_type: str = "text") -> "str | tuple[str, dict]":
+    """Пользовательская точка входа поверх route_message: присваивает
+    request_id, меряет длительность, определяет статус по outcome (см.
+    route_message) и пишет журнал. Возвращает ровно то, что вернула
+    route_message. Исключение журналируется со статусом error и
+    поднимается дальше — поведение вызывающих слоёв (перехват в _on_text,
+    падение CLI с кодом ошибки) не меняется."""
+    import uuid, time
+    base = {"request_id": uuid.uuid4().hex, "chat_id": ctx.chat_id,
+            "user_id": ctx.user_id, "person": ctx.person,
+            "chat_type": ctx.chat_type, "input_type": input_type,
+            "question": text, "model": _model_label(),
+            "app_version": APP_VERSION}
+    outcome: dict = {}
+    t0 = time.monotonic()
+    try:
+        result = route_message(text, ctx, on_step, outcome=outcome)
+    except Exception as e:
+        _safe_log({**base, "status": "error",
+                   "error": f"{type(e).__name__}: {e}",
+                   "duration_ms": int((time.monotonic() - t0) * 1000)})
+        raise
+    body = result[0] if isinstance(result, tuple) else result
+    _safe_log({**base, "status": outcome.get("status", "answered"),
+               "answer": body, "source_keys": outcome.get("source_keys"),
+               "error": outcome.get("error"),
+               "duration_ms": int((time.monotonic() - t0) * 1000)})
+    return result
+
+def _safe_log(entry: dict) -> None:
+    """Страж на границе handle_request поверх собственного подавления ошибок
+    в log_request. Не «на всякий случай»: у него есть именуемый реальный
+    случай — дефект в коде самого log_request (класс «обращение к ключу вне
+    try», уже случавшийся в этом проекте в другом месте). Контракт «журнал
+    никогда не отнимает ответ» обязан выживать и при сломанном log_request,
+    поэтому проверяется тестом именно на этой границе."""
+    try:
+        log_request(entry)
+    except Exception:
+        _journal_logger.exception("log_request нарушил контракт «не поднимать исключений»")
 
 
 def _split_for_telegram(text: str, max_len: int = 3600) -> list[str]:
@@ -2581,7 +2720,7 @@ async def _on_text(update, context) -> None:
     text = update.message.text or ""
     try:
         result = await _run_with_broadcast(
-            context.bot, ctx, lambda on_step: route_message(text, ctx, on_step))
+            context.bot, ctx, lambda on_step: handle_request(text, ctx, on_step))
     except Exception:
         _tg_logger.exception("необработанное исключение в _on_text (chat_id=%s)", ctx.chat_id)
         await _reply(context.bot, ctx.chat_id, _ON_TEXT_ERROR_MSG)
@@ -2607,8 +2746,23 @@ async def _on_advice(update, context) -> None:
         await _reply(context.bot, ctx.chat_id, _UNAUTHORIZED_MSG)
         return
     def call(on_step):
+        # Кнопка идёт мимо route_message (детерминированный вопрос не требует
+        # ни разбора трат, ни состояний диалога), поэтому журнал пишется
+        # здесь, тем же контрактом, что в handle_request: input_type
+        # отличает нажатие кнопки от текста.
+        import uuid, time
+        t0 = time.monotonic()
         ans, registry, any_empty_result = run_agent(ADVICE_QUESTION, ctx, on_step=on_step)
-        return render_answer(ans, ctx, ADVICE_QUESTION, registry, any_empty_result)
+        text = render_answer(ans, ctx, ADVICE_QUESTION, registry, any_empty_result)
+        status = "error" if ans.summary == FINALIZE_FALLBACK_SUMMARY else "answered"
+        log_request({"request_id": uuid.uuid4().hex, "chat_id": ctx.chat_id,
+                     "user_id": ctx.user_id, "person": ctx.person,
+                     "chat_type": ctx.chat_type, "input_type": "callback",
+                     "question": ADVICE_QUESTION, "status": status,
+                     "answer": text, "source_keys": sorted(registry),
+                     "model": _model_label(), "app_version": APP_VERSION,
+                     "duration_ms": int((time.monotonic() - t0) * 1000)})
+        return text
     try:
         result = await _run_with_broadcast(context.bot, ctx, call)
     except Exception:
@@ -3006,7 +3160,7 @@ def main() -> None:
         return send_scheduled_report()
     if a.question:
         ctx = Ctx(person=a.person, chat_type=a.chat, chat_id=0)
-        result = route_message(a.question, ctx)
+        result = handle_request(a.question, ctx)
         # route_message может вернуть (текст, inline_keyboard) для команд с
         # кнопкой (например /report) — CLI не умеет рисовать кнопки, поэтому
         # печатает только текстовую часть, а не сырой кортеж.

@@ -131,7 +131,27 @@ family_rules(key, value_num, value_text, currency,
 documents(id, document_key UNIQUE, doc_type, title, source,
           scope, text, keywords text[], metadata jsonb,
           embedding VECTOR(1024))
+request_log(request_id UNIQUE, received_at, chat_id, user_id,
+            person, chat_type, input_type, question,
+            status CHECK (answered|refused|error), answer,
+            source_keys text[], error, model, app_version,
+            duration_ms)                                   -- журнал обращений
 ```
+
+Журнал обращений пишет `handle_request` — пользовательская точка входа
+поверх `route_message` (Telegram-текст и CLI; кнопка «Совет от ИИ» пишет ту
+же строку сама, с `input_type=callback`). Прямые вызовы `route_message`
+(тесты, `run_demo.py`) журнал не трогают: он фиксирует обращения людей, а не
+прогоны проверок; сообщения неавторизованных пользователей не записываются —
+бот их не обрабатывает, а хранить тексты посторонних значит копить лишние
+персональные данные. Статус определяет код по детерминированным сигналам:
+`error` — исключение или срыв финализации SGR (сравнение с константой
+`FINALIZE_FALLBACK_SUMMARY`), `refused` — инструменты отработали, хотя бы
+один честно вернул пустоту и ни один не дал источника, иначе `answered`.
+Сбой записи журнала гасится двумя слоями (`log_request` и страж `_safe_log`)
+и не отнимает у человека уже сформированный ответ. Для установок, поднятых
+до появления журнала, таблица создаётся лениво тем же `CREATE TABLE IF NOT
+EXISTS` — additive-миграция без пересоздания базы.
 
 `scope ∈ {common, husband, wife}` — в `accounts`, `transactions`, `recurring`, `goals`, `documents`, `family_rules`.
 

@@ -2012,7 +2012,7 @@ def test_cli_prints_only_text_part_of_tuple(monkeypatch, capsys):
     # Пункт 6: route_message может вернуть (текст, inline_keyboard) — CLI
     # раньше печатал это как сырой Python-кортеж (`('...', {...})`).
     monkeypatch.setattr("budget_agent.route_message",
-                        lambda text, ctx: ("Расходы за месяц:\nПродукты: 100 ₽",
+                        lambda text, ctx, on_step=None, outcome=None: ("Расходы за месяц:\nПродукты: 100 ₽",
                                             {"inline_keyboard": [[{"text": "x"}]]}))
     monkeypatch.setattr(sys, "argv", ["budget_agent.py", "/report"])
     main()
@@ -2021,7 +2021,8 @@ def test_cli_prints_only_text_part_of_tuple(monkeypatch, capsys):
     assert "inline_keyboard" not in out
 
 def test_cli_prints_plain_string_unchanged(monkeypatch, capsys):
-    monkeypatch.setattr("budget_agent.route_message", lambda text, ctx: "просто текст")
+    monkeypatch.setattr("budget_agent.route_message",
+                        lambda text, ctx, on_step=None, outcome=None: "просто текст")
     monkeypatch.setattr(sys, "argv", ["budget_agent.py", "какой-то вопрос"])
     main()
     assert capsys.readouterr().out.strip() == "просто текст"
@@ -2905,3 +2906,123 @@ def test_balance_command_does_not_call_model(monkeypatch):
     monkeypatch.setattr("budget_agent.structured_call",
                         lambda *a, **k: pytest.fail("баланс идёт без модели"))
     assert "Общие" in handle_command("/balance", PRIV_H, None)
+
+
+# ===== Журнал обращений (финальное задание, часть 3) =====
+#
+# Требование сквозное: для КАЖДОГО обращения — request_id, кто спросил,
+# вопрос, ответ или отказ, статус answered/refused/error, источники, ошибка.
+# Реализация: handle_request — единственная пользовательская точка входа
+# поверх route_message (Telegram и CLI зовут её); прямые вызовы route_message
+# (тесты, run_demo) журнал НЕ пишут — журнал фиксирует обращения людей, а не
+# прогоны проверок. Статус определяет код по детерминированным сигналам, а
+# не модель: error — исключение или срыв финализации SGR (сравнение с
+# константой FINALIZE_FALLBACK_SUMMARY, не с текстом на глаз); refused —
+# инструменты отработали, всё пусто и ни одного источника; иначе answered.
+# Сбой записи журнала не отнимает у человека готовый ответ.
+
+from budget_agent import (handle_request, log_request, FINALIZE_FALLBACK_SUMMARY,
+                          APP_VERSION)
+
+
+def _journal_rows(question_marker: str):
+    import budget_agent as _ba
+    with db() as conn:
+        conn.execute(_ba._REQUEST_LOG_DDL)   # таблица могла ещё не создаваться
+        return conn.execute(
+            "SELECT request_id, status, answer, source_keys, error, duration_ms, "
+            "person, chat_type, app_version FROM request_log WHERE question = %s "
+            "ORDER BY id", (question_marker,)).fetchall()
+
+
+def test_journal_command_logged_as_answered():
+    marker = "/status"
+    before = len(_journal_rows(marker))
+    result = handle_request(marker, PRIV_H)
+    rows = _journal_rows(marker)
+    assert len(rows) == before + 1
+    rid, status, answer, keys, err, dur, person, chat_type, ver = rows[-1]
+    assert status == "answered" and err is None
+    assert answer == result           # команды возвращают строку
+    assert len(rid) == 32             # uuid4.hex
+    assert dur is not None and dur >= 0
+    assert (person, chat_type) == ("husband", "private")
+    assert ver == APP_VERSION
+
+
+def test_journal_sgr_answered_with_sources(monkeypatch):
+    marker = "журнал-тест: обычный вопрос с данными"
+    ans = FinalAnswer(summary="Ответ по данным.", details=[], scenarios=[],
+                      source_keys=["family_data"])
+    monkeypatch.setattr("budget_agent.run_agent",
+                        lambda *a, **k: (ans, {"family_data"}, False))
+    handle_request(marker, PRIV_H)
+    rid, status, answer, keys, err, *_ = _journal_rows(marker)[-1]
+    assert status == "answered"
+    assert keys == ["family_data"]
+    assert "Ответ по данным." in answer
+
+
+def test_journal_refused_when_all_tools_empty(monkeypatch):
+    marker = "журнал-тест: вопрос, на который в базе ничего нет"
+    ans = FinalAnswer(summary="По этому вопросу данных не нашлось.",
+                      details=[], scenarios=[], source_keys=[])
+    monkeypatch.setattr("budget_agent.run_agent",
+                        lambda *a, **k: (ans, set(), True))
+    handle_request(marker, PRIV_H)
+    _, status, *_ = _journal_rows(marker)[-1]
+    assert status == "refused"
+
+
+def test_journal_error_on_finalize_fallback(monkeypatch):
+    marker = "журнал-тест: срыв финализации"
+    ans = FinalAnswer(summary=FINALIZE_FALLBACK_SUMMARY, details=[],
+                      scenarios=[], source_keys=["family_data"])
+    monkeypatch.setattr("budget_agent.run_agent",
+                        lambda *a, **k: (ans, {"family_data"}, False))
+    handle_request(marker, PRIV_H)
+    _, status, _, _, err, *_ = _journal_rows(marker)[-1]
+    assert status == "error"
+    assert err  # причина названа
+    # результат при этом дошёл до пользователя — ошибка журналируется, но
+    # собранный из сырых шагов ответ не выбрасывается
+
+
+def test_journal_error_on_exception_and_reraise(monkeypatch):
+    marker = "журнал-тест: исключение в обработке"
+    def boom(*a, **k):
+        raise RuntimeError("имитация падения")
+    monkeypatch.setattr("budget_agent.run_agent", boom)
+    with pytest.raises(RuntimeError):
+        handle_request(marker, PRIV_H)
+    _, status, answer, _, err, *_ = _journal_rows(marker)[-1]
+    assert status == "error" and answer is None
+    assert "имитация падения" in err
+
+
+def test_journal_failure_does_not_break_answer(monkeypatch):
+    """Требование задания: недоступный журнал не лишает человека ответа."""
+    monkeypatch.setattr("budget_agent.log_request",
+                        lambda entry: (_ for _ in ()).throw(RuntimeError("журнал упал")))
+    # handle_request зовёт log_request по имени модуля — подмена сработает;
+    # если сама запись падает внутри log_request, он тоже обязан молчать:
+    result = handle_request("/status", PRIV_H)
+    assert "из" in result
+
+
+def test_log_request_swallows_db_failure(monkeypatch):
+    """Сбой на уровне соединения гасится внутри log_request, не поднимаясь."""
+    monkeypatch.setattr("budget_agent.db",
+                        lambda: (_ for _ in ()).throw(RuntimeError("нет базы")))
+    log_request({"request_id": "x" * 32, "question": "q", "status": "answered"})
+
+
+def test_journal_status_check_constraint():
+    from psycopg.errors import CheckViolation
+    with db() as conn:
+        conn.execute(__import__("budget_agent")._REQUEST_LOG_DDL)
+        with pytest.raises(CheckViolation):
+            with conn.transaction():
+                conn.execute(
+                    "INSERT INTO request_log (request_id, question, status) "
+                    "VALUES (%s, 'q', 'weird')", ("z" * 32,))
