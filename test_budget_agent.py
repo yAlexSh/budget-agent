@@ -2951,6 +2951,10 @@ def test_journal_command_logged_as_answered():
 
 
 def test_journal_sgr_answered_with_sources(monkeypatch):
+    # Изоляция от живой модели (ревью PR #26, LOW): route_message до
+    # run_agent зовёт parse_transaction — живой классификатор; при
+    # исчерпанной квоте тест падал бы до проверяемой ветки.
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda text: None)
     marker = "журнал-тест: обычный вопрос с данными"
     ans = FinalAnswer(summary="Ответ по данным.", details=[], scenarios=[],
                       source_keys=["family_data"])
@@ -2964,6 +2968,10 @@ def test_journal_sgr_answered_with_sources(monkeypatch):
 
 
 def test_journal_refused_when_all_tools_empty(monkeypatch):
+    # Изоляция от живой модели (ревью PR #26, LOW): route_message до
+    # run_agent зовёт parse_transaction — живой классификатор; при
+    # исчерпанной квоте тест падал бы до проверяемой ветки.
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda text: None)
     marker = "журнал-тест: вопрос, на который в базе ничего нет"
     ans = FinalAnswer(summary="По этому вопросу данных не нашлось.",
                       details=[], scenarios=[], source_keys=[])
@@ -2975,6 +2983,10 @@ def test_journal_refused_when_all_tools_empty(monkeypatch):
 
 
 def test_journal_error_on_finalize_fallback(monkeypatch):
+    # Изоляция от живой модели (ревью PR #26, LOW): route_message до
+    # run_agent зовёт parse_transaction — живой классификатор; при
+    # исчерпанной квоте тест падал бы до проверяемой ветки.
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda text: None)
     marker = "журнал-тест: срыв финализации"
     ans = FinalAnswer(summary=FINALIZE_FALLBACK_SUMMARY, details=[],
                       scenarios=[], source_keys=["family_data"])
@@ -2989,6 +3001,10 @@ def test_journal_error_on_finalize_fallback(monkeypatch):
 
 
 def test_journal_error_on_exception_and_reraise(monkeypatch):
+    # Изоляция от живой модели (ревью PR #26, LOW): route_message до
+    # run_agent зовёт parse_transaction — живой классификатор; при
+    # исчерпанной квоте тест падал бы до проверяемой ветки.
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda text: None)
     marker = "журнал-тест: исключение в обработке"
     def boom(*a, **k):
         raise RuntimeError("имитация падения")
@@ -3048,3 +3064,64 @@ def test_cli_prints_friendly_error_without_traceback(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "Техническая ошибка" in out
     assert "Traceback" not in out and "RuntimeError" not in out.split("(")[0]
+
+
+# ===== Ревью PR #26 (MEDIUM): контракт журнала для кнопки «Совет от ИИ» =====
+#
+# Callback вёл журнал ручной копией: терял запись при исключении run_agent,
+# не знал refused, писал error без причины. Теперь оба пути проходят общий
+# цикл _journaled с общим правилом _sgr_outcome — три регрессионных теста
+# закрепляют каждый пункт находки. Кнопку эмулируем вызовом той же функции,
+# которую использует _on_advice: собираем sgr-замыкание руками нельзя (оно
+# внутри), поэтому тестируем через _journaled + _sgr_outcome — ровно те
+# кирпичи, из которых собран callback-путь, плюс отдельный тест, что
+# callback-путь действительно ими пользуется (нет второй копии журнала).
+
+from budget_agent import _journaled, _sgr_outcome
+
+
+def _advice_like(ctx, run_agent_fn):
+    """Мини-копия callback-пути _on_advice.call: тот же _journaled + то же
+    правило _sgr_outcome. Если сборка в budget_agent разойдётся с этой —
+    её поймает test_advice_path_has_no_manual_journal ниже."""
+    def sgr(outcome):
+        ans, registry, any_empty = run_agent_fn()
+        _sgr_outcome(outcome, ans, registry, any_empty)
+        return render_answer(ans, PRIV_H, "вопрос-совет", registry, any_empty)
+    return _journaled(ctx, "тест-кнопка: совет", "callback", sgr)
+
+
+def test_callback_journal_row_written_on_exception():
+    def boom():
+        raise RuntimeError("модель упала на кнопке")
+    with pytest.raises(RuntimeError):
+        _advice_like(PRIV_H, boom)
+    rid, status, answer, keys, err, *_ = _journal_rows("тест-кнопка: совет")[-1]
+    assert status == "error" and answer is None
+    assert "модель упала на кнопке" in err
+
+
+def test_callback_journal_refused_when_all_tools_empty():
+    ans = FinalAnswer(summary="Данных нет.", details=[], scenarios=[], source_keys=[])
+    _advice_like(PRIV_H, lambda: (ans, set(), True))
+    _, status, *_ = _journal_rows("тест-кнопка: совет")[-1]
+    assert status == "refused"
+
+
+def test_callback_journal_fallback_error_has_reason():
+    ans = FinalAnswer(summary=FINALIZE_FALLBACK_SUMMARY, details=[],
+                      scenarios=[], source_keys=[])
+    _advice_like(PRIV_H, lambda: (ans, {"family_data"}, False))
+    _, status, _, _, err, *_ = _journal_rows("тест-кнопка: совет")[-1]
+    assert status == "error"
+    assert err, "у error обязана быть причина, NULL — прежний дефект"
+
+
+def test_advice_path_has_no_manual_journal():
+    """Страж от возврата ручной копии: в теле _on_advice не должно быть
+    прямого вызова log_request/_safe_log — только общий цикл _journaled.
+    Проверка по исходнику функции, а не по соглашению."""
+    import inspect, budget_agent
+    src = inspect.getsource(budget_agent._on_advice)
+    assert "log_request(" not in src and "_safe_log(" not in src
+    assert "_journaled(" in src and "_sgr_outcome(" in src
