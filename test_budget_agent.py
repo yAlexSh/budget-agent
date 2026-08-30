@@ -287,6 +287,25 @@ def test_search_household_hides_personal_in_supergroup():
 
 from budget_agent import load_seed, db, create_schema, SeedNotEmpty
 
+@pytest.fixture(scope="session", autouse=True)
+def _journal_cleanup():
+    """Suite убирает за собой журнал обращений — тем же принципом, что и
+    тестовые транзакции. Ревью 2026-08-29 показало: журнал на общей базе
+    состоял из 215 строк прогонов suite и ни одной живой — документация
+    при этом обещала обратное. Снимок max(id) до прогона, удаление всего
+    нового после: удаляются ровно строки, созданные этим прогоном.
+    Оговорка та же, что у всего suite (см. docs/operations.md): параллельно
+    с тестами на той же базе работать нельзя — иначе под удаление попадут
+    и живые строки, записанные во время прогона."""
+    import budget_agent as _ba
+    with db() as conn:
+        conn.execute(_ba._REQUEST_LOG_DDL)
+        top = conn.execute("SELECT coalesce(max(id), 0) FROM request_log").fetchone()[0]
+    yield
+    with db() as conn:
+        conn.execute("DELETE FROM request_log WHERE id > %s", (top,))
+
+
 @pytest.fixture
 def seeded_conn():
     # Каждый сид-тест сам обеспечивает нужное состояние базы — не полагается
@@ -2579,6 +2598,17 @@ def test_stale_message_is_not_processed_and_gets_a_notice(monkeypatch):
         asyncio.run(_skip_stale(update, context))
     assert len(context.bot.sent) == 1
     assert "заново" in context.bot.sent[0]["text"]
+    # Ревью 2026-08-29: пропуск обязан оставить след в журнале — обращение
+    # было и ответ был, а строки не было.
+    rows = _journal_rows("потратил 3200 в ВкусВилле")
+    assert rows, "пропущенное стражем сообщение обязано журналироваться"
+    _, status, answer, _, err, *_ = rows[-1]
+    assert status == "refused" and "простоя" in err
+    assert answer and "заново" in answer
+    with db() as conn:
+        itype = conn.execute("SELECT input_type FROM request_log WHERE request_id=%s",
+                             (rows[-1][0],)).fetchone()[0]
+    assert itype == "stale"
 
 
 def test_second_stale_message_in_same_chat_is_silent(monkeypatch):
@@ -2624,6 +2654,10 @@ def test_stale_message_from_stranger_gets_no_notice(monkeypatch):
     with pytest.raises(ApplicationHandlerStop):
         asyncio.run(_skip_stale(update, context))
     assert context.bot.sent == [], "посторонним бот не отвечает и здесь"
+    # ...и не журналирует их: хранить тексты посторонних — лишние
+    # персональные данные (ревью 2026-08-29, тот же принцип, что в
+    # handle_request).
+    assert not _journal_rows("привет"), "сообщение постороннего не должно попадать в журнал"
 
 
 # ===== 6. Доходная часть =====
