@@ -2425,6 +2425,28 @@ def _reset_notice(state: str, pending: dict | None) -> str:
     return ""
 
 
+def _sgr_outcome(outcome: dict, ans: FinalAnswer, registry: "set[str]",
+                 any_empty_result: bool) -> None:
+    """Единственное место, где считается статус SGR-исхода для журнала
+    обращений — им пользуются и route_message (текст, CLI), и кнопка «Совет
+    от ИИ». Ревью PR #26 нашло копию этой логики в callback-пути, и копия
+    уже разошлась с оригиналом по двум пунктам из трёх (нет refused, error
+    без причины) — тот же класс дефекта «одно правило, две копии», что и с
+    валютным фильтром категории в PR #22.
+
+    Статус считает код, не модель: error — срыв финализации (run_agent
+    вернул честную сборку из сырых шагов, сравнение с константой это
+    фиксирует); refused — инструменты отработали, хотя бы один честно
+    вернул пустоту и ни один не дал источника: агенту нечем подтвердить
+    ответ; остальное — answered (умолчание в _journaled)."""
+    outcome["source_keys"] = sorted(registry)
+    if ans.summary == FINALIZE_FALLBACK_SUMMARY:
+        outcome["status"] = "error"
+        outcome["error"] = ("финализация SGR не удалась — ответ собран из "
+                            "сырых результатов шагов")
+    elif any_empty_result and not registry:
+        outcome["status"] = "refused"
+
 def route_message(text: str, ctx: Ctx, on_step=None,
                   outcome: "dict | None" = None) -> "str | tuple[str, dict]":
     """Единая точка входа для Telegram- и CLI-слоя. Порядок ветвей
@@ -2499,20 +2521,7 @@ def route_message(text: str, ctx: Ctx, on_step=None,
 
     ans, registry, any_empty_result = run_agent(text, ctx, on_step=on_step)
     if outcome is not None:
-        # Статус для журнала обращений считает код, не модель (handle_request).
-        # error — срыв финализации: run_agent уже вернул честную сборку из
-        # сырых шагов, сравнение с константой это фиксирует. refused —
-        # инструменты отработали, хотя бы один честно вернул пустоту и ни
-        # один не дал источника: агенту нечем подтвердить ответ. Остальное —
-        # answered; ветки команд/трат/диалога выше не заполняют outcome и
-        # получают answered умолчанием в handle_request.
-        outcome["source_keys"] = sorted(registry)
-        if ans.summary == FINALIZE_FALLBACK_SUMMARY:
-            outcome["status"] = "error"
-            outcome["error"] = ("финализация SGR не удалась — ответ собран из "
-                                "сырых результатов шагов")
-        elif any_empty_result and not registry:
-            outcome["status"] = "refused"
+        _sgr_outcome(outcome, ans, registry, any_empty_result)
     staged = get_state(ctx.chat_id, ctx.user_id)
     if staged["state"] == "awaiting_limit_confirm":
         # Агент подготовил смену лимита. Наружу уходит детерминированный
@@ -2580,24 +2589,25 @@ def log_request(entry: dict) -> None:
         _journal_logger.exception("запись журнала обращений не удалась "
                                   "(request_id=%s)", entry.get("request_id"))
 
-def handle_request(text: str, ctx: Ctx, on_step=None,
-                   input_type: str = "text") -> "str | tuple[str, dict]":
-    """Пользовательская точка входа поверх route_message: присваивает
-    request_id, меряет длительность, определяет статус по outcome (см.
-    route_message) и пишет журнал. Возвращает ровно то, что вернула
-    route_message. Исключение журналируется со статусом error и
-    поднимается дальше — поведение вызывающих слоёв (перехват в _on_text,
-    падение CLI с кодом ошибки) не меняется."""
+def _journaled(ctx: Ctx, question: str, input_type: str, fn):
+    """Единый жизненный цикл журнала обращений для произвольного вызова:
+    request_id, замер длительности, запись при успехе И при исключении
+    (с re-raise — поведение вызывающих слоёв не меняется). fn получает
+    словарь outcome и заполняет его через _sgr_outcome либо оставляет
+    пустым (детерминированные пути) — тогда статус answered. Ревью PR #26:
+    callback «Совет от ИИ» вёл журнал вручную и терял запись при
+    исключении run_agent — теперь оба пути (handle_request и кнопка)
+    проходят один и тот же цикл, расходиться больше нечему."""
     import uuid, time
     base = {"request_id": uuid.uuid4().hex, "chat_id": ctx.chat_id,
             "user_id": ctx.user_id, "person": ctx.person,
             "chat_type": ctx.chat_type, "input_type": input_type,
-            "question": text, "model": _model_label(),
+            "question": question, "model": _model_label(),
             "app_version": APP_VERSION}
     outcome: dict = {}
     t0 = time.monotonic()
     try:
-        result = route_message(text, ctx, on_step, outcome=outcome)
+        result = fn(outcome)
     except Exception as e:
         _safe_log({**base, "status": "error",
                    "error": f"{type(e).__name__}: {e}",
@@ -2609,6 +2619,13 @@ def handle_request(text: str, ctx: Ctx, on_step=None,
                "error": outcome.get("error"),
                "duration_ms": int((time.monotonic() - t0) * 1000)})
     return result
+
+def handle_request(text: str, ctx: Ctx, on_step=None,
+                   input_type: str = "text") -> "str | tuple[str, dict]":
+    """Пользовательская точка входа поверх route_message: журнал ведёт
+    общий цикл _journaled. Возвращает ровно то, что вернула route_message."""
+    return _journaled(ctx, text, input_type,
+                      lambda outcome: route_message(text, ctx, on_step, outcome=outcome))
 
 def _safe_log(entry: dict) -> None:
     """Страж на границе handle_request поверх собственного подавления ошибок
@@ -2747,22 +2764,16 @@ async def _on_advice(update, context) -> None:
         return
     def call(on_step):
         # Кнопка идёт мимо route_message (детерминированный вопрос не требует
-        # ни разбора трат, ни состояний диалога), поэтому журнал пишется
-        # здесь, тем же контрактом, что в handle_request: input_type
-        # отличает нажатие кнопки от текста.
-        import uuid, time
-        t0 = time.monotonic()
-        ans, registry, any_empty_result = run_agent(ADVICE_QUESTION, ctx, on_step=on_step)
-        text = render_answer(ans, ctx, ADVICE_QUESTION, registry, any_empty_result)
-        status = "error" if ans.summary == FINALIZE_FALLBACK_SUMMARY else "answered"
-        log_request({"request_id": uuid.uuid4().hex, "chat_id": ctx.chat_id,
-                     "user_id": ctx.user_id, "person": ctx.person,
-                     "chat_type": ctx.chat_type, "input_type": "callback",
-                     "question": ADVICE_QUESTION, "status": status,
-                     "answer": text, "source_keys": sorted(registry),
-                     "model": _model_label(), "app_version": APP_VERSION,
-                     "duration_ms": int((time.monotonic() - t0) * 1000)})
-        return text
+        # ни разбора трат, ни состояний диалога), но журнал ведёт тот же
+        # общий цикл _journaled и то же правило статуса _sgr_outcome, что и
+        # текстовый путь: ревью PR #26 нашло здесь ручную копию журнала,
+        # которая теряла запись при исключении run_agent, не знала refused
+        # и писала error без причины.
+        def sgr(outcome):
+            ans, registry, any_empty_result = run_agent(ADVICE_QUESTION, ctx, on_step=on_step)
+            _sgr_outcome(outcome, ans, registry, any_empty_result)
+            return render_answer(ans, ctx, ADVICE_QUESTION, registry, any_empty_result)
+        return _journaled(ctx, ADVICE_QUESTION, "callback", sgr)
     try:
         result = await _run_with_broadcast(context.bot, ctx, call)
     except Exception:
