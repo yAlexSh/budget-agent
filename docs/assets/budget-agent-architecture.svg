@@ -317,12 +317,13 @@ rect.c-bg-rect { fill: var(--bg); }
         <path data-edge-from="cli" data-edge-to="router" data-edge-label="вопрос" data-edge-key="1" data-edge-id="cli-to-router" data-composition-points="190,512;446,512;446,359;470,359" d="M 190 512 L 438 512 Q 446 512 446 504 L 446 367 Q 446 359 454 359 L 470 359" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="telegram" data-edge-to="router" data-edge-key="2" data-edge-id="telegram-to-router" data-composition-points="400,345;470,345" d="M 400 345 L 470 345" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="router" data-edge-to="fast" data-edge-label="команда" data-edge-key="3" data-edge-id="router-to-fast" data-composition-points="545,320;545,224" d="M 545 320 L 545 224" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="router" data-edge-to="dialog" data-edge-label="ответ на вопрос" data-edge-key="4" data-edge-id="router-to-dialog" data-composition-points="545,384;545,480" d="M 545 384 L 545 480" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="router" data-edge-to="dialog" data-edge-label="висящий вопрос" data-edge-key="4" data-edge-id="router-to-dialog" data-composition-points="552,384;552,408;666,408;666,512;690,512" d="M 552 384 L 552 400 Q 552 408 560 408 L 658 408 Q 666 408 666 416 L 666 504 Q 666 512 674 512 L 690 512" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="router" data-edge-to="sgr" data-edge-label="вопрос" data-edge-key="5" data-edge-id="router-to-sgr" data-composition-points="620,352;690,352" d="M 620 352 L 690 352" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="sgr" data-edge-to="ollama" data-edge-label="схема" data-edge-key="6" data-edge-id="sgr-to-ollama" data-composition-points="765,320;765,224" d="M 765 320 L 765 224" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="sgr" data-edge-to="tools" data-edge-label="вызов" data-edge-key="7" data-edge-id="sgr-to-tools" data-composition-points="840,352;910,352" d="M 840 352 L 910 352" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="tools" data-edge-to="postgres" data-edge-label="SQL" data-edge-key="8" data-edge-id="tools-to-postgres" data-composition-points="1060,352;1130,352" d="M 1060 352 L 1130 352" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="tools" data-edge-to="mcp" data-edge-label="курсы" data-edge-key="9" data-edge-id="tools-to-mcp" data-composition-points="985,384;985,480" d="M 985 384 L 985 480" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="router" data-edge-to="journal" data-edge-label="запись" data-edge-key="10" data-edge-id="router-to-journal" data-composition-points="538,384;538,480" d="M 538 384 L 538 480" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
         <g id="node-users" data-node-id="users" data-node-label="Муж и жена" tabindex="0" role="button" aria-label="Focus Муж и жена, общий и личные чаты, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="общий и личные чаты" data-node-context="Architecture component">
@@ -371,27 +372,27 @@ rect.c-bg-rect { fill: var(--bg); }
         <text x="545" y="206" class="t-muted" font-size="9" text-anchor="middle">/status, /balance, /report</text>
         </g>
 
-        <g id="node-router" data-node-id="router" data-node-label="Маршрутизация" tabindex="0" role="button" aria-label="Focus Маршрутизация, команда, операция, вопрос, Один файл budget_agent.py" aria-pressed="false" data-node-kind="backend" data-node-sublabel="команда, операция, вопрос" data-node-context="Один файл budget_agent.py">
-          <title>Маршрутизация · команда, операция, вопрос · Один файл budget_agent.py</title>
+        <g id="node-router" data-node-id="router" data-node-label="Маршрутизация" tabindex="0" role="button" aria-label="Focus Маршрутизация, разбор и журнал, Один файл budget_agent.py" aria-pressed="false" data-node-kind="backend" data-node-sublabel="разбор и журнал" data-node-context="Один файл budget_agent.py">
+          <title>Маршрутизация · разбор и журнал · Один файл budget_agent.py</title>
           <rect x="470" y="320" width="150" height="64" rx="6" class="c-mask"/>
           <rect x="470" y="320" width="150" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(476 326) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" x="545" y="350" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Маршрутизация</text>
-        <text x="545" y="366" class="t-muted" font-size="9" text-anchor="middle">команда, операция, вопрос</text>
+        <text x="545" y="366" class="t-muted" font-size="9" text-anchor="middle">разбор и журнал</text>
         </g>
 
         <g id="node-dialog" data-node-id="dialog" data-node-label="dialog_state" tabindex="0" role="button" aria-label="Focus dialog_state, висящий вопрос, TTL 1 ч, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="висящий вопрос, TTL 1 ч" data-node-context="Architecture component">
           <title>dialog_state · висящий вопрос, TTL 1 ч · Architecture component</title>
-          <rect x="470" y="480" width="150" height="64" rx="6" class="c-mask"/>
-          <rect x="470" y="480" width="150" height="64" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(476 486) scale(0.6875)">
+          <rect x="690" y="480" width="150" height="64" rx="6" class="c-mask"/>
+          <rect x="690" y="480" width="150" height="64" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(696 486) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" x="545" y="510" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">dialog_state</text>
-        <text x="545" y="526" class="t-muted" font-size="9" text-anchor="middle">висящий вопрос, TTL 1 ч</text>
+          <text data-node-label="" x="765" y="510" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">dialog_state</text>
+        <text x="765" y="526" class="t-muted" font-size="9" text-anchor="middle">висящий вопрос, TTL 1 ч</text>
         </g>
 
         <g id="node-ollama" data-node-id="ollama" data-node-label="Ollama" tabindex="0" role="button" aria-label="Focus Ollama, модель и эмбеддинги, Architecture component" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="модель и эмбеддинги" data-node-context="Architecture component">
@@ -439,8 +440,8 @@ rect.c-bg-rect { fill: var(--bg); }
         <text x="985" y="526" class="t-muted" font-size="9" text-anchor="middle">stdio, дочерний процесс</text>
         </g>
 
-        <g id="node-postgres" data-node-id="postgres" data-node-label="Postgres 18" tabindex="0" role="button" aria-label="Focus Postgres 18, pgvector, 11 таблиц, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="pgvector, 11 таблиц" data-node-context="Architecture component">
-          <title>Postgres 18 · pgvector, 11 таблиц · Architecture component</title>
+        <g id="node-postgres" data-node-id="postgres" data-node-label="Postgres 18" tabindex="0" role="button" aria-label="Focus Postgres 18, pgvector, факты и RAG, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="pgvector, факты и RAG" data-node-context="Architecture component">
+          <title>Postgres 18 · pgvector, факты и RAG · Architecture component</title>
           <rect x="1130" y="320" width="150" height="64" rx="6" class="c-mask"/>
           <rect x="1130" y="320" width="150" height="64" rx="6" class="c-database" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1136 326) scale(0.6875)">
@@ -448,7 +449,19 @@ rect.c-bg-rect { fill: var(--bg); }
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
           <text data-node-label="" x="1205" y="350" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Postgres 18</text>
-        <text x="1205" y="366" class="t-muted" font-size="9" text-anchor="middle">pgvector, 11 таблиц</text>
+        <text x="1205" y="366" class="t-muted" font-size="9" text-anchor="middle">pgvector, факты и RAG</text>
+        </g>
+
+        <g id="node-journal" data-node-id="journal" data-node-label="Журнал обращений" tabindex="0" role="button" aria-label="Focus Журнал обращений, request_log, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="request_log" data-node-context="Architecture component">
+          <title>Журнал обращений · request_log · Architecture component</title>
+          <rect x="470" y="480" width="150" height="64" rx="6" class="c-mask"/>
+          <rect x="470" y="480" width="150" height="64" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(476 486) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" x="545" y="510" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Журнал обращений</text>
+        <text x="545" y="526" class="t-muted" font-size="9" text-anchor="middle">request_log</text>
         </g>
 
         <!-- Connection labels -->
@@ -465,9 +478,9 @@ rect.c-bg-rect { fill: var(--bg); }
           <rect x="523.2" y="300" width="43.6" height="14" rx="3" class="c-mask"/>
           <text x="545" y="310" class="t-muted" font-size="8" text-anchor="middle">команда</text>
         </g>
-        <g data-edge-from="router" data-edge-to="dialog" data-edge-label="ответ на вопрос" data-edge-key="4" data-edge-id="router-to-dialog">
-          <rect x="504" y="408" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="545" y="418" class="t-muted" font-size="8" text-anchor="middle">ответ на вопрос</text>
+        <g data-edge-from="router" data-edge-to="dialog" data-edge-label="висящий вопрос" data-edge-key="4" data-edge-id="router-to-dialog">
+          <rect x="640.4" y="412" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="679" y="422" class="t-muted" font-size="8" text-anchor="middle">висящий вопрос</text>
         </g>
         <g data-edge-from="router" data-edge-to="sgr" data-edge-label="вопрос" data-edge-key="5" data-edge-id="router-to-sgr">
           <rect x="635.6" y="306" width="38.8" height="14" rx="3" class="c-mask"/>
@@ -488,6 +501,10 @@ rect.c-bg-rect { fill: var(--bg); }
         <g data-edge-from="tools" data-edge-to="mcp" data-edge-label="курсы" data-edge-key="9" data-edge-id="tools-to-mcp">
           <rect x="968" y="408" width="34" height="14" rx="3" class="c-mask"/>
           <text x="985" y="418" class="t-messagebus" font-size="8" text-anchor="middle">курсы</text>
+        </g>
+        <g data-edge-from="router" data-edge-to="journal" data-edge-label="запись" data-edge-key="10" data-edge-id="router-to-journal">
+          <rect x="458.6" y="408" width="38.8" height="14" rx="3" class="c-mask"/>
+          <text x="478" y="418" class="t-messagebus" font-size="8" text-anchor="middle">запись</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
