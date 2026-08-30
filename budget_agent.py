@@ -2847,9 +2847,26 @@ async def _skip_stale(update, context) -> None:
     if _STARTED_AT is None or date is None or date >= _STARTED_AT:
         return
     ctx = resolve_ctx(update)
-    if _is_authorized_ctx(ctx) and ctx.chat_id not in _STALE_NOTIFIED:
-        _STALE_NOTIFIED.add(ctx.chat_id)
-        await _reply(context.bot, ctx.chat_id, _STALE_NOTICE)
+    if _is_authorized_ctx(ctx):
+        notified_already = ctx.chat_id in _STALE_NOTIFIED
+        if not notified_already:
+            _STALE_NOTIFIED.add(ctx.chat_id)
+            await _reply(context.bot, ctx.chat_id, _STALE_NOTICE)
+        # Ревью 2026-08-29: обращение было, ответ (один на чат) был, а следа
+        # в журнале не оставалось — при заявленном «каждое обращение человека
+        # оставляет строку» это дыра. Пропуск журналируется как refused с
+        # input_type='stale': бот отказался исполнять устаревший ввод.
+        # Неавторизованные не журналируются, как и во всех остальных путях.
+        import uuid
+        _safe_log({"request_id": uuid.uuid4().hex, "chat_id": ctx.chat_id,
+                   "user_id": ctx.user_id, "person": ctx.person,
+                   "chat_type": ctx.chat_type, "input_type": "stale",
+                   "question": (getattr(msg, "text", None) or "<не текст>"),
+                   "status": "refused",
+                   "answer": _STALE_NOTICE if not notified_already else None,
+                   "error": "сообщение из очереди простоя — не исполнено",
+                   "model": _model_label(), "app_version": APP_VERSION,
+                   "duration_ms": 0})
     raise ApplicationHandlerStop
 
 
