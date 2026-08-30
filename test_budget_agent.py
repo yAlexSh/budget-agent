@@ -3026,3 +3026,25 @@ def test_journal_status_check_constraint():
                 conn.execute(
                     "INSERT INTO request_log (request_id, question, status) "
                     "VALUES (%s, 'q', 'weird')", ("z" * 32,))
+
+
+# ===== Правка из протокола тестирования финального задания (2026-08-29) =====
+#
+# Негативная проверка «недоступность модели» показала: Telegram-слой отдаёт
+# понятное сообщение (_on_text перехватывает), а CLI вываливал сырой
+# traceback AuthenticationError в терминал — нарушение требования «не
+# отправлять пользователю необработанный traceback». Теперь CLI печатает
+# одну понятную строку и выходит с кодом 1; полный стек остаётся в журнале
+# обращений (handle_request журналирует error до re-raise) и в тех. логе.
+
+def test_cli_prints_friendly_error_without_traceback(monkeypatch, capsys):
+    def boom(text, ctx, on_step=None, outcome=None):
+        raise RuntimeError("модель недоступна (имитация)")
+    monkeypatch.setattr("budget_agent.route_message", boom)
+    monkeypatch.setattr(sys, "argv", ["budget_agent.py", "любой вопрос"])
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 1
+    out = capsys.readouterr().out
+    assert "Техническая ошибка" in out
+    assert "Traceback" not in out and "RuntimeError" not in out.split("(")[0]
