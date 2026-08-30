@@ -3125,3 +3125,35 @@ def test_advice_path_has_no_manual_journal():
     src = inspect.getsource(budget_agent._on_advice)
     assert "log_request(" not in src and "_safe_log(" not in src
     assert "_journaled(" in src and "_sgr_outcome(" in src
+
+
+# ===== Неблокирующий нюанс ревью PR #28: сквозной тест кнопки до БД =====
+#
+# Тесты выше проверяют кирпичи (_journaled, _sgr_outcome) и исходник
+# _on_advice, но не прогоняли саму _on_advice до строки в request_log —
+# а вспомогательный _advice_like честно назван мини-копией пути. Этот тест
+# закрывает зазор: настоящий вызов _on_advice с фальшивым Telegram-обновлением
+# и проверка фактической строки журнала, включая input_type=callback.
+
+def test_on_advice_end_to_end_writes_journal_row(monkeypatch):
+    from budget_agent import ADVICE_QUESTION
+    monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(broadcast_steps=False))
+    ans = FinalAnswer(summary="сквозной совет для журнала", details=[],
+                      scenarios=[], source_keys=["family_data"])
+    monkeypatch.setattr("budget_agent.run_agent",
+                        lambda *a, **k: (ans, {"family_data"}, False))
+    before = len(_journal_rows(ADVICE_QUESTION))
+    update, context = _FakeCQUpdate(), _FakeContext()
+    asyncio.run(_on_advice(update, context))
+    rows = _journal_rows(ADVICE_QUESTION)
+    assert len(rows) == before + 1, "нажатие кнопки обязано оставить строку журнала"
+    rid, status, answer, keys, err, dur, person, chat_type, ver = rows[-1]
+    assert status == "answered" and err is None
+    assert "сквозной совет для журнала" in answer
+    assert keys == ["family_data"]
+    assert dur is not None and dur >= 0 and ver == APP_VERSION
+    with db() as conn:
+        itype = conn.execute("SELECT input_type FROM request_log WHERE request_id=%s",
+                             (rid,)).fetchone()[0]
+    assert itype == "callback"
+    assert any("сквозной совет" in m["text"] for m in context.bot.sent)
