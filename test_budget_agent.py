@@ -3266,3 +3266,41 @@ def test_search_drops_irrelevant_documents():
         "вопрос по теме обязан находить документы"
     assert search_household("что мы решили насчёт покупки дачи", ctx), \
         "пограничный вопрос по теме не должен отсекаться порогом"
+
+
+def test_disabled_thinking_sends_parameters_the_backends_understand(monkeypatch):
+    """Отключение размышлений должно доезжать до модели, а не в пустоту.
+
+    Замечание ревью 2026-08-31: в OpenAI-совместимом эндпоинте Ollama поля
+    `think` нет — оно живёт в родном /api/chat, а здесь молча игнорируется.
+    Замер на gpt-oss:120b-cloud (три прогона на вариант, длина поля reasoning):
+    think=False — 161/189/175, reasoning_effort="none" — 242/179/204,
+    reasoning_effort="low" — 6/28/28. То есть "none" не действует так же, как
+    игнорируемое think, а работает именно "low". DeepSeek принимает оба поля
+    (проверено, http 200), поэтому отправляем их вместе.
+    """
+    captured = {}
+
+    class _FakeCompletions:
+        def create(self, **kwargs):
+            captured.update(kwargs)
+            class _M:
+                content = '{"ok": true}'
+            class _C:
+                message = _M()
+            class _R:
+                choices = [_C()]
+            return _R()
+
+    class _FakeClient:
+        chat = type("chat", (), {"completions": _FakeCompletions()})()
+
+    monkeypatch.setattr("budget_agent.llm_client", lambda: _FakeClient())
+    monkeypatch.setattr("budget_agent.SETTINGS",
+                        SETTINGS.__class__(**{**SETTINGS.__dict__, "disable_thinking": True}))
+    from budget_agent import _raw_completion
+    _raw_completion([{"role": "user", "content": "привет"}])
+    extra = captured["extra_body"]
+    assert extra["reasoning_effort"] == "low", "Ollama слушает reasoning_effort, а не think"
+    assert extra["thinking"] == {"type": "disabled"}, "DeepSeek слушает thinking"
+    assert "think" not in extra, "поле think эндпоинтом игнорируется — держать его значит обманывать читателя"
