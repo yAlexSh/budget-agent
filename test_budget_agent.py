@@ -3321,11 +3321,15 @@ def test_transport_failure_becomes_structured_failure(monkeypatch):
     же дверью, что и неудачный разбор: у них уже есть политика на этот случай,
     а на голое исключение провайдера — нет."""
     import httpx
+    from openai import APIConnectionError
     from budget_agent import StructuredFailure, ProviderUnavailable
 
+    # Ошибку транспорта приносит SDK своим классом — httpx-исключение он
+    # заворачивает сам. Проверять голый httpx здесь значило бы проверять то,
+    # чего в этой точке не бывает.
     class _Boom:
         def create(self, **kwargs):
-            raise httpx.ConnectError("соединение отвергнуто")
+            raise APIConnectionError(request=httpx.Request("POST", "http://x/v1/chat"))
 
     class _FakeClient:
         chat = type("chat", (), {"completions": _Boom()})()
@@ -3363,3 +3367,109 @@ def test_search_threshold_comes_from_settings(monkeypatch):
     monkeypatch.setattr("budget_agent.SETTINGS",
                         SETTINGS.__class__(**{**SETTINGS.__dict__, "rag_min_score": 0.0}))
     assert search_knowledge("рецепт борща", ctx), "с нулевым порогом возвращается всё"
+
+
+# ===== 11. Разделение временных и постоянных сбоев провайдера =====
+
+def _client_raising(exc):
+    class _Boom:
+        def create(self, **kwargs):
+            raise exc
+    return type("client", (), {"chat": type("chat", (), {"completions": _Boom()})()})()
+
+
+def test_transient_provider_errors_become_provider_unavailable(monkeypatch):
+    """Обрыв, таймаут, 429 и 5xx — временные: их и надо повторять."""
+    import httpx
+    from openai import APIConnectionError, APITimeoutError, RateLimitError, InternalServerError
+    from budget_agent import ProviderUnavailable, _raw_completion
+
+    req = httpx.Request("POST", "http://x/v1/chat/completions")
+    resp429 = httpx.Response(429, request=req)
+    resp500 = httpx.Response(500, request=req)
+    for exc in (APIConnectionError(request=req),
+                APITimeoutError(request=req),
+                RateLimitError("429", response=resp429, body=None),
+                InternalServerError("500", response=resp500, body=None)):
+        monkeypatch.setattr("budget_agent.llm_client", lambda e=exc: _client_raising(e))
+        with pytest.raises(ProviderUnavailable):
+            _raw_completion([{"role": "user", "content": "привет"}])
+
+
+def test_permanent_provider_errors_are_not_disguised_as_unavailable(monkeypatch):
+    """400 из-за неверного поля и 401 — это ошибка настройки, а не «сервис
+    прилёг». Их нельзя ни повторять, ни прятать: повтор ничего не изменит, а
+    маскировка спрячет причину от того, кто может её починить."""
+    import httpx
+    from openai import BadRequestError, AuthenticationError
+    from budget_agent import ProviderUnavailable, _raw_completion
+
+    req = httpx.Request("POST", "http://x/v1/chat/completions")
+    for exc in (BadRequestError("400", response=httpx.Response(400, request=req), body=None),
+                AuthenticationError("401", response=httpx.Response(401, request=req), body=None)):
+        monkeypatch.setattr("budget_agent.llm_client", lambda e=exc: _client_raising(e))
+        with pytest.raises(type(exc)) as caught:
+            _raw_completion([{"role": "user", "content": "привет"}])
+        assert not isinstance(caught.value, ProviderUnavailable)
+
+
+def test_programming_error_is_not_disguised_as_unavailable(monkeypatch):
+    """Опечатка в коде тоже не должна выглядеть недоступностью провайдера."""
+    from budget_agent import ProviderUnavailable, _raw_completion
+
+    monkeypatch.setattr("budget_agent.llm_client",
+                        lambda: _client_raising(TypeError("unexpected keyword argument")))
+    with pytest.raises(TypeError) as caught:
+        _raw_completion([{"role": "user", "content": "привет"}])
+    assert not isinstance(caught.value, ProviderUnavailable)
+
+
+def test_router_sends_thinking_only_to_deepseek(monkeypatch):
+    """Поле thinking — диалект DeepSeek. Другому OpenAI-совместимому роутеру
+    оно прилетит как незнакомое поле и может вернуться 400."""
+    from budget_agent import _raw_completion
+    captured = {}
+
+    class _FakeCompletions:
+        def create(self, **kwargs):
+            captured.clear(); captured.update(kwargs)
+            class _M: content = '{"ok": true}'
+            class _C: message = _M()
+            class _R: choices = [_C()]
+            return _R()
+
+    monkeypatch.setattr("budget_agent.llm_client",
+                        lambda: type("c", (), {"chat": type("chat", (), {"completions": _FakeCompletions()})()})())
+
+    monkeypatch.setattr("budget_agent.SETTINGS", SETTINGS.__class__(
+        **{**SETTINGS.__dict__, "disable_thinking": True, "provider": "router",
+           "router_model": "deepseek-v4-flash"}))
+    _raw_completion([{"role": "user", "content": "привет"}])
+    assert captured["extra_body"] == {"thinking": {"type": "disabled"}}
+
+    monkeypatch.setattr("budget_agent.SETTINGS", SETTINGS.__class__(
+        **{**SETTINGS.__dict__, "disable_thinking": True, "provider": "router",
+           "router_model": "gpt-4o-mini"}))
+    _raw_completion([{"role": "user", "content": "привет"}])
+    assert "extra_body" not in captured, "чужому роутеру диалектные поля не отправляем"
+
+
+@pytest.mark.parametrize("value", ["banana", "none", ""])
+def test_bad_reasoning_effort_stops_startup(monkeypatch, value):
+    """Неверный уровень ломал бы каждый вызов модели замаскированной ошибкой —
+    дешевле не стартовать вовсе."""
+    from budget_agent import load_settings
+    monkeypatch.setenv("LLM_REASONING_EFFORT", value)
+    if value == "":
+        pytest.skip("пустая строка означает «не задано» и берёт умолчание")
+    with pytest.raises(SystemExit):
+        load_settings()
+
+
+@pytest.mark.parametrize("value", ["-1", "2", "не число"])
+def test_bad_rag_threshold_stops_startup(monkeypatch, value):
+    """Порог вне [0, 1] либо отключает смысл отсечки, либо выключает поиск."""
+    from budget_agent import load_settings
+    monkeypatch.setenv("RAG_MIN_SCORE", value)
+    with pytest.raises(SystemExit):
+        load_settings()

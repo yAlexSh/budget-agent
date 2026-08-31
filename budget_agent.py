@@ -17,7 +17,8 @@ from typing import Annotated, Literal, Union
 import httpx
 import psycopg
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import (OpenAI, APIConnectionError, APITimeoutError, RateLimitError,
+                    InternalServerError)
 from pgvector.psycopg import register_vector
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, ValidationError, model_validator
 
@@ -56,13 +57,40 @@ class Settings:
     mcp_call_timeout_seconds: float
     broadcast_steps: bool
 
+_REASONING_EFFORTS = ("low", "medium", "high")
+
+def _reasoning_effort() -> str:
+    """Уровень размышлений для Ollama. Проверяется на старте, а не в момент
+    вызова: неверное значение уходило бы в каждый запрос и возвращалось как
+    невнятная ошибка провайдера — искать её пришлось бы там, где она не
+    живёт."""
+    value = os.getenv("LLM_REASONING_EFFORT", "low").strip().lower() or "low"
+    if value not in _REASONING_EFFORTS:
+        sys.exit(f"Ошибка: LLM_REASONING_EFFORT={value!r} — допустимы "
+                 f"{', '.join(_REASONING_EFFORTS)}.")
+    return value
+
+def _rag_min_score(value: float) -> float:
+    """Порог близости RAG. Вне [0, 1] он не имеет смысла: отрицательный
+    пропускает всё и отменяет сам себя, больший единицы отсекает всё и молча
+    выключает поиск. Оба случая проявились бы не отказом, а странными
+    ответами."""
+    if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+        sys.exit(f"Ошибка: RAG_MIN_SCORE={value!r} — нужно число от 0 до 1.")
+    return value
+
 def load_settings() -> Settings:
     def _int(name):
         v = os.getenv(name, "").strip()
         return int(v) if v else None
     def _float(name, default):
         v = os.getenv(name, "").strip()
-        return float(v) if v else default
+        if not v:
+            return default
+        try:
+            return float(v)
+        except ValueError:
+            sys.exit(f"Ошибка: {name}={v!r} — нужно число.")
     def _need(name):
         v = os.getenv(name, "").strip()
         if not v:
@@ -92,11 +120,11 @@ def load_settings() -> Settings:
         disable_thinking=os.getenv("LLM_DISABLE_THINKING", "1") == "1",
         # Уровень размышлений для Ollama. Полностью выключить их у gpt-oss нельзя:
         # "low" — минимум, который реально действует (замер в _raw_completion).
-        reasoning_effort=os.getenv("LLM_REASONING_EFFORT", "low").strip() or "low",
+        reasoning_effort=_reasoning_effort(),
         # Порог близости для выдачи RAG. Настраивается, потому что привязан к
         # модели эмбеддингов, а она задаётся EMBED_MODEL: со сменой модели шкала
         # близости меняется, и прежнее число молча срезало бы нужные документы.
-        rag_min_score=_float("RAG_MIN_SCORE", 0.40),
+        rag_min_score=_rag_min_score(_float("RAG_MIN_SCORE", 0.40)),
         # Эмбеддинги всегда идут через локальную Ollama, независимо от LLM_PROVIDER.
         embed_url=_need("EMBED_URL").rstrip("/"),
         embed_model=_need("EMBED_MODEL"),
@@ -185,6 +213,15 @@ def llm_client() -> OpenAI:
 def _model_name() -> str:
     return SETTINGS.ollama_model if SETTINGS.provider == "ollama" else SETTINGS.router_model
 
+# Временные сбои провайдера: обрыв, таймаут, 429 и 5xx. Только они повторяются
+# и только они переводятся в ProviderUnavailable. Остальное — 400 из-за
+# неверного поля, 401, отсутствующая модель, опечатка в коде — постоянные
+# ошибки: повтор их не вылечит, а перевод в «провайдер временно недоступен»
+# спрячет причину от того, кто может её починить (внешнее ревью, третий круг:
+# широкий перехват оказался опаснее исходного дефекта).
+_TRANSIENT_PROVIDER_ERRORS = (APIConnectionError, APITimeoutError,
+                              RateLimitError, InternalServerError)
+
 def _raw_completion(messages, response_format=None, max_tokens=1200):
     kwargs = {"model": _model_name(), "messages": messages, "max_tokens": max_tokens}
     if response_format:
@@ -203,19 +240,23 @@ def _raw_completion(messages, response_format=None, max_tokens=1200):
             # Полностью размышления у gpt-oss не выключаются: "low" — это минимум,
             # а не ноль, поэтому настройка и называется уровнем, а не выключателем.
             extra["reasoning_effort"] = SETTINGS.reasoning_effort
-        else:
-            extra["thinking"] = {"type": "disabled"}   # DeepSeek V4
+        elif "deepseek" in (SETTINGS.router_model or "").lower():
+            # thinking — диалект DeepSeek, а не общий для OpenAI-совместимых
+            # эндпоинтов. Роутером может быть что угодно, и чужому эндпоинту
+            # незнакомое поле вправе вернуться четырёхсотым: тогда сломается не
+            # режим размышлений, а весь вызов (внешнее ревью, третий круг).
+            # Проверка по имени модели — грубая, но честная: она признаёт, что
+            # поле поддерживается не «роутером вообще», а конкретным семейством.
+            extra["thinking"] = {"type": "disabled"}
 
     if extra:
         kwargs["extra_body"] = extra
     try:
         resp = llm_client().chat.completions.create(**kwargs)
-    except Exception as e:
-        # Сбой транспорта приходит вызывающим той же дверью, что и неудачный
+    except _TRANSIENT_PROVIDER_ERRORS as e:
+        # Временный сбой приходит вызывающим той же дверью, что и неудачный
         # разбор: политика «модель не смогла ответить» у них уже есть, а на
-        # голое исключение провайдера — нет. Разбирать типы исключений SDK
-        # здесь бессмысленно: их состав меняется от версии к версии, а нам
-        # важно одно — ответа не будет.
+        # голое исключение провайдера — нет.
         raise ProviderUnavailable(f"{type(e).__name__}: {e}") from e
     return resp.choices[0].message.content or ""
 
