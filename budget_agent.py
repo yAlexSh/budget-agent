@@ -1131,15 +1131,29 @@ def load_documents(conn, path: str, doc_type: str) -> int:
 # Ctx и visible_scopes определены в разделе 4 (ХРАНИЛИЩЕ) — используются как
 # инструментами бюджета (раздел 5), так и поиском ниже.
 
+# Порог косинусной близости для выдачи RAG. Замер на текущих корпусах
+# (2026-08-31): у вопросов по теме лучшая близость 0.605–0.815, у вопросов не
+# по теме — не выше 0.330; пограничный живой случай «что решили насчёт покупки
+# дачи» даёт 0.456 к HH-001 о пороге крупной покупки. 0.40 разделяет эти
+# группы с запасом с обеих сторон. Число выведено из замера, а не выбрано на
+# глаз: при смене корпусов или модели эмбеддингов его надо перемерить тем же
+# способом.
+SEARCH_MIN_SCORE = 0.40
+
 def _search(conn, query: str, doc_type: str, ctx: Ctx, top_k: int) -> list[dict]:
+    """Ближайшие документы корпуса, но только те, что действительно похожи:
+    без порога агент на вопрос не по базе получал три случайных документа и
+    добросовестно отвечал по ним (внешнее ревью 2026-08-31)."""
     vec = embed(query)
     cur = conn.execute(
         """SELECT document_key, title, text, 1 - (embedding <=> %s::vector) AS score
            FROM documents
            WHERE doc_type = %s AND scope = ANY(%s)
+             AND 1 - (embedding <=> %s::vector) >= %s
            ORDER BY embedding <=> %s::vector
            LIMIT %s""",
-        (vec, doc_type, list(visible_scopes(ctx.person, ctx.chat_type)), vec, top_k))
+        (vec, doc_type, list(visible_scopes(ctx.person, ctx.chat_type)), vec,
+         SEARCH_MIN_SCORE, vec, top_k))
     return [{"document_key": k, "title": t, "text": x, "score": float(s)}
             for k, t, x, s in cur.fetchall()]
 
@@ -1661,14 +1675,19 @@ def _is_empty_tool_result(data) -> bool:
     falsy: 0.0 в get_balance или num_days=0 — это реальный ответ, а не
     пустота. Пустота — это отсутствие строк/элементов там, где инструмент
     в принципе мог бы их вернуть: список (search_knowledge/search_household
-    отдают data прямо списком) или контейнер с ключом items/by_category
-    (get_goals/get_recurring/get_expenses)."""
+    отдают data прямо списком) или контейнер с ключом items/by_category/points
+    (get_goals/get_recurring/get_expenses, инструменты ЦБ)."""
     if data is None:
         return True
     if isinstance(data, list):
         return len(data) == 0
     if isinstance(data, dict):
-        for key in ("items", "by_category"):
+        # points — форма ответа MCP-сервера ЦБ (курс, ставка, инфляция). Без
+        # него пустой ряд с сервера считался содержательным ответом: флаг
+        # «здесь не видно» не поднимался, а источник cbr:… в ответ попадал.
+        # Найдено внешним ревью 2026-08-31 на живом сервере, который отдаёт
+        # пустую инфляцию на любой диапазон лет.
+        for key in ("items", "by_category", "points"):
             if key in data:
                 return len(data[key]) == 0
     return False
@@ -2514,7 +2533,17 @@ def route_message(text: str, ctx: Ctx, on_step=None,
         notice = _reset_notice(st["state"], st["pending"])
         set_state(ctx.chat_id, "base", user_id=ctx.user_id)
 
-    parsed = parse_transaction(text)
+    try:
+        parsed = parse_transaction(text)
+    except StructuredFailure:
+        # Классификатор — единственное обращение к модели вне run_agent, и до
+        # этой правки единственное незащищённое: два неудачных разбора подряд
+        # роняли StructuredFailure мимо всей обороны цикла, человек получал
+        # «не получилось обработать сообщение», а вопрос до агента не доходил
+        # вовсе (внешнее ревью 2026-08-31). Отказ разбора трактуется как «это
+        # не про операцию»: цена ошибки — лишний проход агента, а не
+        # потерянный вопрос.
+        parsed = None
     if parsed:
         handle = _handle_income if parsed.kind == "income" else _handle_spending
         return notice + handle(parsed, ctx)

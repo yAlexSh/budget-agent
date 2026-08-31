@@ -3191,3 +3191,78 @@ def test_on_advice_end_to_end_writes_journal_row(monkeypatch):
                              (rid,)).fetchone()[0]
     assert itype == "callback"
     assert any("сквозной совет" in m["text"] for m in context.bot.sent)
+
+
+# ===== 9. Замечания внешнего ревью 2026-08-31 =====
+
+def test_classifier_failure_does_not_lose_the_question(monkeypatch):
+    """Отказ разбора классификатора не должен съедать вопрос.
+
+    Замечание ревью: parse_transaction вызывался без защиты, хотя это
+    обращение к модели на каждом сообщении. Два неудачных разбора подряд — и
+    StructuredFailure летел мимо всей обороны run_agent, а человек вместо
+    ответа получал «не получилось обработать сообщение».
+    """
+    from budget_agent import StructuredFailure
+
+    def boom(_text):
+        raise StructuredFailure("модель не смогла разобрать сообщение")
+
+    monkeypatch.setattr("budget_agent.parse_transaction", boom)
+    monkeypatch.setattr("budget_agent.run_agent",
+                        lambda q, ctx, **k: (FinalAnswer(summary="ответ агента", details=[],
+                                                          scenarios=[], source_keys=[]),
+                                             set(), False))
+    out = route_message("сколько мы потратили на продукты", Ctx("husband", "private", 930))
+    assert "ответ агента" in out, "вопрос обязан дойти до агента, а не потеряться на классификаторе"
+
+
+@pytest.mark.parametrize("data,expected", [
+    ({"points": []}, True),
+    ({"points": [{"date": "2026-01-01", "rate": "14.00"}]}, False),
+    ({"items": []}, True),
+    ({"by_category": []}, True),
+])
+def test_empty_tool_result_knows_points(data, expected):
+    """Инструменты ЦБ отдают ряд под ключом points — без него пустой ответ
+    сервера считался содержательным: флаг «здесь не видно» не поднимался, а
+    источник cbr:inflation@… в ответ попадал."""
+    from budget_agent import _is_empty_tool_result
+    assert _is_empty_tool_result(data) is expected
+
+
+def test_empty_cbr_inflation_raises_empty_flag(monkeypatch):
+    """Сквозная проверка того же: пустая инфляция поднимает any_empty_result."""
+    from budget_agent import TOOL_REGISTRY
+
+    step = NextStep(goal_progress="начало", plan_remaining_steps=["спросить инфляцию"],
+                    decision_summary="смотрю инфляцию", task_completed=False,
+                    call={"tool": "cbr_inflation", "year_from": 2023, "year_to": 2024})
+    done = NextStep(goal_progress="готово", plan_remaining_steps=["ответить"],
+                    decision_summary="данных нет", call={"tool": "none"}, task_completed=True)
+    final = FinalAnswer(summary="Инфляция за период не найдена.", details=[], scenarios=[],
+                        source_keys=["cbr:inflation@2023-2024"])
+    monkeypatch.setattr("budget_agent.structured_call", _script([step, done, final]))
+    monkeypatch.setitem(TOOL_REGISTRY, "cbr_inflation",
+                        lambda ctx, a: {"data": {"year_from": 2023, "year_to": 2024,
+                                                 "points": [], "source": "Центральный банк РФ"},
+                                        "source_keys": ["cbr:inflation@2023-2024"]})
+    _, _, any_empty_result = run_agent("какая была инфляция", PRIV_H)
+    assert any_empty_result, "пустой ряд ЦБ обязан считаться пустым результатом"
+
+
+def test_search_drops_irrelevant_documents():
+    """Порог релевантности: вопрос не по корпусу не должен приносить документы.
+
+    Замер на текущих корпусах: у вопросов по теме лучшая близость 0.605–0.815,
+    у вопросов не по теме — не выше 0.330. Порог 0.40 разделяет их с запасом и
+    оставляет пограничный живой случай («что решили насчёт покупки дачи» —
+    0.456 к HH-001 о пороге крупной покупки).
+    """
+    ctx = Ctx("husband", "private", 1)
+    assert search_knowledge("рецепт борща", ctx) == []
+    assert search_household("как поменять масло в двигателе", ctx) == []
+    assert search_knowledge("зачем нужна финансовая подушка безопасности", ctx), \
+        "вопрос по теме обязан находить документы"
+    assert search_household("что мы решили насчёт покупки дачи", ctx), \
+        "пограничный вопрос по теме не должен отсекаться порогом"
