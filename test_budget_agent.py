@@ -3268,39 +3268,98 @@ def test_search_drops_irrelevant_documents():
         "пограничный вопрос по теме не должен отсекаться порогом"
 
 
-def test_disabled_thinking_sends_parameters_the_backends_understand(monkeypatch):
-    """Отключение размышлений должно доезжать до модели, а не в пустоту.
+# ===== 10. Контракт модельного слоя (второй круг внешнего ревью) =====
 
-    Замечание ревью 2026-08-31: в OpenAI-совместимом эндпоинте Ollama поля
-    `think` нет — оно живёт в родном /api/chat, а здесь молча игнорируется.
-    Замер на gpt-oss:120b-cloud (три прогона на вариант, длина поля reasoning):
-    think=False — 161/189/175, reasoning_effort="none" — 242/179/204,
-    reasoning_effort="low" — 6/28/28. То есть "none" не действует так же, как
-    игнорируемое think, а работает именно "low". DeepSeek принимает оба поля
-    (проверено, http 200), поэтому отправляем их вместе.
-    """
+def _capture_completion(monkeypatch, **settings_overrides):
+    """Подменяет клиента модели и возвращает словарь с перехваченными kwargs."""
     captured = {}
 
     class _FakeCompletions:
         def create(self, **kwargs):
             captured.update(kwargs)
-            class _M:
-                content = '{"ok": true}'
-            class _C:
-                message = _M()
-            class _R:
-                choices = [_C()]
+            class _M: content = '{"ok": true}'
+            class _C: message = _M()
+            class _R: choices = [_C()]
             return _R()
 
     class _FakeClient:
         chat = type("chat", (), {"completions": _FakeCompletions()})()
 
     monkeypatch.setattr("budget_agent.llm_client", lambda: _FakeClient())
-    monkeypatch.setattr("budget_agent.SETTINGS",
-                        SETTINGS.__class__(**{**SETTINGS.__dict__, "disable_thinking": True}))
+    monkeypatch.setattr("budget_agent.SETTINGS", SETTINGS.__class__(
+        **{**SETTINGS.__dict__, "disable_thinking": True, **settings_overrides}))
+    return captured
+
+
+def test_ollama_payload_has_no_deepseek_field(monkeypatch):
+    """Поля backend'ов не смешиваются: чужому эндпоинту незнакомое поле может
+    прилететь как 400, и тогда сломается не «размышление», а весь вызов."""
+    captured = _capture_completion(monkeypatch, provider="ollama")
     from budget_agent import _raw_completion
     _raw_completion([{"role": "user", "content": "привет"}])
     extra = captured["extra_body"]
-    assert extra["reasoning_effort"] == "low", "Ollama слушает reasoning_effort, а не think"
-    assert extra["thinking"] == {"type": "disabled"}, "DeepSeek слушает thinking"
-    assert "think" not in extra, "поле think эндпоинтом игнорируется — держать его значит обманывать читателя"
+    assert extra == {"reasoning_effort": "low"}, extra
+
+
+def test_router_payload_has_no_ollama_field(monkeypatch):
+    captured = _capture_completion(monkeypatch, provider="router")
+    from budget_agent import _raw_completion
+    _raw_completion([{"role": "user", "content": "привет"}])
+    extra = captured["extra_body"]
+    assert extra == {"thinking": {"type": "disabled"}}, extra
+
+
+def test_reasoning_effort_is_configurable(monkeypatch):
+    captured = _capture_completion(monkeypatch, provider="ollama", reasoning_effort="medium")
+    from budget_agent import _raw_completion
+    _raw_completion([{"role": "user", "content": "привет"}])
+    assert captured["extra_body"]["reasoning_effort"] == "medium"
+
+
+def test_transport_failure_becomes_structured_failure(monkeypatch):
+    """Сбой транспорта (429, таймаут, обрыв) обязан приходить к вызывающим той
+    же дверью, что и неудачный разбор: у них уже есть политика на этот случай,
+    а на голое исключение провайдера — нет."""
+    import httpx
+    from budget_agent import StructuredFailure, ProviderUnavailable
+
+    class _Boom:
+        def create(self, **kwargs):
+            raise httpx.ConnectError("соединение отвергнуто")
+
+    class _FakeClient:
+        chat = type("chat", (), {"completions": _Boom()})()
+
+    monkeypatch.setattr("budget_agent.llm_client", lambda: _FakeClient())
+    with pytest.raises(ProviderUnavailable) as e:
+        structured_call(NextStep, [{"role": "user", "content": "привет"}], mode="prompt")
+    assert isinstance(e.value, StructuredFailure), "политика одна на оба случая"
+
+
+def test_question_survives_transport_failure_of_classifier(monkeypatch):
+    """Ollama отвечает 429 — вопрос всё равно обязан дойти до агента."""
+    from budget_agent import ProviderUnavailable
+
+    def boom(_text):
+        raise ProviderUnavailable("429 Too Many Requests")
+
+    monkeypatch.setattr("budget_agent.parse_transaction", boom)
+    monkeypatch.setattr("budget_agent.run_agent",
+                        lambda q, ctx, **k: (FinalAnswer(summary="ответ агента", details=[],
+                                                          scenarios=[], source_keys=[]),
+                                             set(), False))
+    out = route_message("сколько мы потратили на продукты", Ctx("husband", "private", 940))
+    assert "ответ агента" in out
+
+
+def test_search_threshold_comes_from_settings(monkeypatch):
+    """Порог привязан к модели эмбеддингов, а она настраивается — значит и
+    порог обязан настраиваться, иначе после смены модели документы молча
+    исчезнут."""
+    ctx = Ctx("husband", "private", 1)
+    monkeypatch.setattr("budget_agent.SETTINGS",
+                        SETTINGS.__class__(**{**SETTINGS.__dict__, "rag_min_score": 0.99}))
+    assert search_knowledge("зачем нужна финансовая подушка безопасности", ctx) == []
+    monkeypatch.setattr("budget_agent.SETTINGS",
+                        SETTINGS.__class__(**{**SETTINGS.__dict__, "rag_min_score": 0.0}))
+    assert search_knowledge("рецепт борща", ctx), "с нулевым порогом возвращается всё"
