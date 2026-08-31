@@ -6,6 +6,12 @@ services:
       POSTGRES_PASSWORD: budget
       POSTGRES_DB: budget
     ports: ["127.0.0.1:5433:5432"]
-    volumes: ["budget_pgdata:/var/lib/postgresql/data"]
+    # Том монтируется в /var/lib/postgresql, а не в подкаталог data: у образов
+    # postgres 18 данные лежат в /var/lib/postgresql/18/docker, а сам образ
+    # объявляет томом родительский каталог. При монтировании в .../data
+    # контейнер на чистом томе падает с «there appears to be PostgreSQL data
+    # in /var/lib/postgresql/data (unused mount/volume)» — то есть первый шаг
+    # README не проходил на чистой машине (внешнее ревью 2026-08-31).
+    volumes: ["budget_pgdata:/var/lib/postgresql"]
 volumes:
   budget_pgdata:

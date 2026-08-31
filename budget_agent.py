@@ -173,7 +173,15 @@ def _raw_completion(messages, response_format=None, max_tokens=1200):
     extra = {}
     if SETTINGS.disable_thinking:
         extra["thinking"] = {"type": "disabled"}   # DeepSeek V4
-        extra["think"] = False                      # Ollama
+        # Ollama: в OpenAI-совместимом эндпоинте поля think нет — оно живёт в
+        # родном /api/chat и здесь молча игнорировалось (внешнее ревью
+        # 2026-08-31). Замер на gpt-oss:120b-cloud, три прогона на вариант,
+        # длина поля reasoning: think=False — 161/189/175, "none" —
+        # 242/179/204, "low" — 6/28/28. То есть "none" не действует так же,
+        # как игнорируемое think; работает именно "low". Полностью размышления
+        # у gpt-oss не выключаются — уровень «low» это и есть минимум.
+        extra["reasoning_effort"] = "low"           # Ollama
+
     if extra:
         kwargs["extra_body"] = extra
     resp = llm_client().chat.completions.create(**kwargs)
