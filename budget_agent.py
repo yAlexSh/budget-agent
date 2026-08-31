@@ -41,6 +41,8 @@ class Settings:
     router_model: str | None
     structured_mode: str
     disable_thinking: bool
+    reasoning_effort: str
+    rag_min_score: float
     embed_url: str
     embed_model: str
     pg_dsn: str
@@ -88,6 +90,13 @@ def load_settings() -> Settings:
         router_model=os.getenv("ROUTER_MODEL"),
         structured_mode=os.getenv("LLM_STRUCTURED_MODE", "auto").strip().lower(),
         disable_thinking=os.getenv("LLM_DISABLE_THINKING", "1") == "1",
+        # Уровень размышлений для Ollama. Полностью выключить их у gpt-oss нельзя:
+        # "low" — минимум, который реально действует (замер в _raw_completion).
+        reasoning_effort=os.getenv("LLM_REASONING_EFFORT", "low").strip() or "low",
+        # Порог близости для выдачи RAG. Настраивается, потому что привязан к
+        # модели эмбеддингов, а она задаётся EMBED_MODEL: со сменой модели шкала
+        # близости меняется, и прежнее число молча срезало бы нужные документы.
+        rag_min_score=_float("RAG_MIN_SCORE", 0.40),
         # Эмбеддинги всегда идут через локальную Ollama, независимо от LLM_PROVIDER.
         embed_url=_need("EMBED_URL").rstrip("/"),
         embed_model=_need("EMBED_MODEL"),
@@ -127,6 +136,16 @@ else:
 
 class StructuredFailure(RuntimeError):
     """Модель не вернула разбираемый ответ, соответствующий схеме."""
+
+class ProviderUnavailable(StructuredFailure):
+    """Модель не ответила по причине транспорта: обрыв, таймаут, 429, 5xx.
+
+    Наследник StructuredFailure намеренно: у вызывающих уже есть политика на
+    «модель не смогла ответить» — шаг цикла продолжается, финализация отдаёт
+    собранное, классификатор трактует сообщение как не-операцию. Отдельный
+    голый тип исключения потребовал бы повторить эту политику в каждом месте
+    вызова и разъехался бы с ней при первой же правке (внешнее ревью,
+    второй круг: 429 от Ollama уходил мимо защиты классификатора)."""
 
 _FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.S)
 
@@ -172,19 +191,32 @@ def _raw_completion(messages, response_format=None, max_tokens=1200):
         kwargs["response_format"] = response_format
     extra = {}
     if SETTINGS.disable_thinking:
-        extra["thinking"] = {"type": "disabled"}   # DeepSeek V4
-        # Ollama: в OpenAI-совместимом эндпоинте поля think нет — оно живёт в
-        # родном /api/chat и здесь молча игнорировалось (внешнее ревью
-        # 2026-08-31). Замер на gpt-oss:120b-cloud, три прогона на вариант,
-        # длина поля reasoning: think=False — 161/189/175, "none" —
-        # 242/179/204, "low" — 6/28/28. То есть "none" не действует так же,
-        # как игнорируемое think; работает именно "low". Полностью размышления
-        # у gpt-oss не выключаются — уровень «low» это и есть минимум.
-        extra["reasoning_effort"] = "low"           # Ollama
+        # Поля разные у разных бэкендов, и смешивать их нельзя: незнакомое поле
+        # один эндпоинт молча проглотит, а другой ответит 400 — сломается не
+        # «размышление», а весь вызов. Поэтому payload собирается по провайдеру
+        # (внешнее ревью, второй круг).
+        if SETTINGS.provider == "ollama":
+            # В OpenAI-совместимом эндпоинте Ollama поля think нет — оно живёт в
+            # родном /api/chat и молча игнорируется. Замер на gpt-oss:120b-cloud,
+            # три прогона на вариант, длина поля reasoning: think=False —
+            # 161/189/175, reasoning_effort "none" — 242/179/204, "low" — 6/28/28.
+            # Полностью размышления у gpt-oss не выключаются: "low" — это минимум,
+            # а не ноль, поэтому настройка и называется уровнем, а не выключателем.
+            extra["reasoning_effort"] = SETTINGS.reasoning_effort
+        else:
+            extra["thinking"] = {"type": "disabled"}   # DeepSeek V4
 
     if extra:
         kwargs["extra_body"] = extra
-    resp = llm_client().chat.completions.create(**kwargs)
+    try:
+        resp = llm_client().chat.completions.create(**kwargs)
+    except Exception as e:
+        # Сбой транспорта приходит вызывающим той же дверью, что и неудачный
+        # разбор: политика «модель не смогла ответить» у них уже есть, а на
+        # голое исключение провайдера — нет. Разбирать типы исключений SDK
+        # здесь бессмысленно: их состав меняется от версии к версии, а нам
+        # важно одно — ответа не будет.
+        raise ProviderUnavailable(f"{type(e).__name__}: {e}") from e
     return resp.choices[0].message.content or ""
 
 def _schema_prompt(schema: type[BaseModel]) -> str:
@@ -211,6 +243,13 @@ def structured_call(schema, messages, mode=None, max_tokens=1200):
         try:
             raw = _raw_completion(convo, response_format=rf, max_tokens=max_tokens)
             return schema.model_validate(extract_json(raw))
+        except ProviderUnavailable as e:
+            # Транспортный сбой лечится повтором чаще, чем разбор: 429 и обрыв
+            # часто проходят со второй попытки. Дополнять переписку объяснением
+            # смысла нет — модель его не получала.
+            last_error = e
+            if attempt == 2:
+                raise
         except (StructuredFailure, ValidationError) as e:
             last_error = e
             if attempt == 2:
@@ -235,6 +274,11 @@ def _probe(mode: str) -> bool:
     try:
         obj = structured_call(_Probe, _PROBE_MSGS, mode=mode, max_tokens=300)
         ok = isinstance(obj, _Probe)
+    except ProviderUnavailable:
+        # Недоступность модели ничего не говорит о том, поддерживает ли она
+        # режим. Кэшировать такой отрицательный ответ значит на весь процесс
+        # запомнить «режим не работает» из-за одной 429 — поэтому пробрасываем.
+        raise
     except Exception:
         ok = False
     _probe_results[mode] = ok
@@ -1146,8 +1190,6 @@ def load_documents(conn, path: str, doc_type: str) -> int:
 # группы с запасом с обеих сторон. Число выведено из замера, а не выбрано на
 # глаз: при смене корпусов или модели эмбеддингов его надо перемерить тем же
 # способом.
-SEARCH_MIN_SCORE = 0.40
-
 def _search(conn, query: str, doc_type: str, ctx: Ctx, top_k: int) -> list[dict]:
     """Ближайшие документы корпуса, но только те, что действительно похожи:
     без порога агент на вопрос не по базе получал три случайных документа и
@@ -1161,7 +1203,7 @@ def _search(conn, query: str, doc_type: str, ctx: Ctx, top_k: int) -> list[dict]
            ORDER BY embedding <=> %s::vector
            LIMIT %s""",
         (vec, doc_type, list(visible_scopes(ctx.person, ctx.chat_type)), vec,
-         SEARCH_MIN_SCORE, vec, top_k))
+         SETTINGS.rag_min_score, vec, top_k))
     return [{"document_key": k, "title": t, "text": x, "score": float(s)}
             for k, t, x, s in cur.fetchall()]
 
