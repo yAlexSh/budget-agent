@@ -10,10 +10,10 @@
 |---|---|---|---|
 | `LLM_PROVIDER` | всегда | `ollama` | `ollama` или `router` |
 | `OLLAMA_URL`, `OLLAMA_MODEL` | при `LLM_PROVIDER=ollama` | — | обязательны в этом режиме; в режиме `router` не читаются |
-| `ROUTER_API_URL`, `ROUTER_API_KEY`, `ROUTER_MODEL` | при `LLM_PROVIDER=router` | — | без любой из трёх запуск прерывается; ключ можно задать и переменной `AGENT_PLATFORM_API_KEY` |
+| `ROUTER_API_URL`, `ROUTER_API_KEY`, `ROUTER_MODEL` | при `LLM_PROVIDER=router` | — | без любой из трёх запуск прерывается; ключ можно задать и переменной `AGENT_PLATFORM_API_KEY`. Поле отключения размышлений (`thinking`) уходит только моделям семейства DeepSeek: другому OpenAI-совместимому эндпоинту незнакомое поле может вернуться четырёхсотым |
 | `LLM_STRUCTURED_MODE` | необязательна | `auto` | `auto`, `strict`, `json_object`, `prompt`; режим определяет `--check-backend` |
 | `LLM_DISABLE_THINKING` | необязательна | `1` | `1` просит модель не рассуждать вслух. Для DeepSeek это полное отключение (`thinking: disabled`), для Ollama — снижение до уровня `LLM_REASONING_EFFORT`: у `gpt-oss` размышления не выключаются совсем, минимум это `low` |
-| `LLM_REASONING_EFFORT` | необязательна | `low` | уровень размышлений для Ollama: `low`, `medium`, `high`. Действует только при `LLM_DISABLE_THINKING=1`; значение `none` эндпоинт игнорирует (замерено) |
+| `LLM_REASONING_EFFORT` | необязательна | `low` | уровень размышлений для Ollama: `low`, `medium`, `high`. Действует только при `LLM_DISABLE_THINKING=1`; значение `none` эндпоинт игнорирует (замерено). Другое значение прерывает запуск с понятным сообщением |
 | `EMBED_URL`, `EMBED_MODEL` | всегда | — | эмбеддинги идут через Ollama независимо от `LLM_PROVIDER` |
 | `PG_DSN` | всегда | — | без неё запуск прерывается |
 | `TELEGRAM_BOT_TOKEN` | для `--telegram` | — | CLI работает без токена |
@@ -21,7 +21,7 @@
 | `TELEGRAM_REPORT_CHAT_ID` | для `--report-cron` | — | без неё отчёт печатается в stdout, а не уходит в чат |
 | `PERSON_HUSBAND_TG_ID`, `PERSON_WIFE_TG_ID` | для `--telegram` | — | роль резолвится по числовому id |
 | `TELEGRAM_ALLOWED_GROUP_CHAT_IDS` | для групп | пусто | пустое значение запрещает работу во всех группах |
-| `RAG_MIN_SCORE` | необязательна | `0.40` | порог косинусной близости для выдачи RAG. Привязан к `EMBED_MODEL`: при смене модели эмбеддингов порог перемеряется (способ — в разделе «Порог релевантности» дизайн-документа) |
+| `RAG_MIN_SCORE` | необязательна | `0.40` | порог косинусной близости для выдачи RAG, число от 0 до 1. Привязан к `EMBED_MODEL`: при смене модели эмбеддингов порог перемеряется (способ — в разделе «Порог релевантности» дизайн-документа). Значение вне диапазона прерывает запуск |
 | `MCP_CBR_CMD` | всегда | — | команда запуска MCP-сервера ЦБ; без неё запуск прерывается даже в CLI |
 | `MCP_INIT_TIMEOUT_SECONDS` | необязательна | `60` | первый запуск через `uvx` дольше обычного вызова |
 | `MCP_CALL_TIMEOUT_SECONDS` | необязательна | `15` | таймаут `tools/call` и `tools/list` |
