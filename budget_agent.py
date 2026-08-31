@@ -17,8 +17,7 @@ from typing import Annotated, Literal, Union
 import httpx
 import psycopg
 from dotenv import load_dotenv
-from openai import (OpenAI, APIConnectionError, APITimeoutError, RateLimitError,
-                    InternalServerError)
+from openai import OpenAI, APIConnectionError, APIStatusError
 from pgvector.psycopg import register_vector
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, ValidationError, model_validator
 
@@ -213,14 +212,29 @@ def llm_client() -> OpenAI:
 def _model_name() -> str:
     return SETTINGS.ollama_model if SETTINGS.provider == "ollama" else SETTINGS.router_model
 
-# Временные сбои провайдера: обрыв, таймаут, 429 и 5xx. Только они повторяются
-# и только они переводятся в ProviderUnavailable. Остальное — 400 из-за
-# неверного поля, 401, отсутствующая модель, опечатка в коде — постоянные
-# ошибки: повтор их не вылечит, а перевод в «провайдер временно недоступен»
-# спрячет причину от того, кто может её починить (внешнее ревью, третий круг:
-# широкий перехват оказался опаснее исходного дефекта).
-_TRANSIENT_PROVIDER_ERRORS = (APIConnectionError, APITimeoutError,
-                              RateLimitError, InternalServerError)
+# Временность сбоя определяется не списком классов исключений, а тем же
+# правилом, по которому её определяет сам SDK (см. _should_retry в
+# openai/_base_client.py): заголовок x-should-retry главнее всего, затем
+# статусы 408 (таймаут запроса), 409 (конфликт блокировки), 429 и всё от 500.
+# Список классов эту таблицу не выражал: 408 приходит обычным APIStatusError,
+# 409 — ConflictError, и оба выглядели постоянными (внешнее ревью, четвёртый
+# круг). Постоянные ошибки — 400 из-за неверного поля, 401, отсутствующая
+# модель, опечатка в коде — по-прежнему идут наружу без повтора: повтор их не
+# лечит, а перевод в «провайдер временно недоступен» прячет причину от того,
+# кто может её починить.
+_RETRYABLE_STATUSES = (408, 409, 429)
+
+def _is_transient_status(err: APIStatusError) -> bool:
+    response = getattr(err, "response", None)
+    header = ""
+    if response is not None:
+        header = (response.headers.get("x-should-retry") or "").strip().lower()
+    if header == "true":
+        return True
+    if header == "false":
+        return False
+    status = getattr(err, "status_code", None) or 0
+    return status in _RETRYABLE_STATUSES or status >= 500
 
 def _raw_completion(messages, response_format=None, max_tokens=1200):
     kwargs = {"model": _model_name(), "messages": messages, "max_tokens": max_tokens}
@@ -253,11 +267,17 @@ def _raw_completion(messages, response_format=None, max_tokens=1200):
         kwargs["extra_body"] = extra
     try:
         resp = llm_client().chat.completions.create(**kwargs)
-    except _TRANSIENT_PROVIDER_ERRORS as e:
-        # Временный сбой приходит вызывающим той же дверью, что и неудачный
-        # разбор: политика «модель не смогла ответить» у них уже есть, а на
-        # голое исключение провайдера — нет.
+    except APIConnectionError as e:
+        # Обрыв и таймаут соединения (APITimeoutError — его наследник): ответа
+        # нет и статуса нет, повторять осмысленно.
         raise ProviderUnavailable(f"{type(e).__name__}: {e}") from e
+    except APIStatusError as e:
+        if _is_transient_status(e):
+            # Временный сбой приходит вызывающим той же дверью, что и неудачный
+            # разбор: политика «модель не смогла ответить» у них уже есть, а на
+            # голое исключение провайдера — нет.
+            raise ProviderUnavailable(f"{type(e).__name__}: {e}") from e
+        raise
     return resp.choices[0].message.content or ""
 
 def _schema_prompt(schema: type[BaseModel]) -> str:

@@ -3473,3 +3473,58 @@ def test_bad_rag_threshold_stops_startup(monkeypatch, value):
     monkeypatch.setenv("RAG_MIN_SCORE", value)
     with pytest.raises(SystemExit):
         load_settings()
+
+
+# ===== 12. Временность определяется статусом, а не списком классов =====
+#
+# Ревью четвёртого круга: 408 и 409 SDK считает повторяемыми (его _should_retry
+# перечисляет x-should-retry, 408, 409, 429 и всё от 500), а наш список классов
+# их не покрывал — 408 приходит обычным APIStatusError, 409 — ConflictError.
+# Значит после исчерпания внутренних повторов SDK такие сбои уходили к нам как
+# постоянные: классификатор терял вопрос, человек получал сообщение об ошибке.
+
+def _status_error(status: int, headers: dict | None = None):
+    import httpx
+    from openai import APIStatusError
+    req = httpx.Request("POST", "http://x/v1/chat/completions")
+    resp = httpx.Response(status, request=req, headers=headers or {})
+    return APIStatusError(f"HTTP {status}", response=resp, body=None)
+
+
+@pytest.mark.parametrize("status", [408, 409, 429, 500, 502, 503])
+def test_retryable_statuses_are_transient(monkeypatch, status):
+    from budget_agent import ProviderUnavailable, _raw_completion
+    monkeypatch.setattr("budget_agent.llm_client",
+                        lambda: _client_raising(_status_error(status)))
+    with pytest.raises(ProviderUnavailable):
+        _raw_completion([{"role": "user", "content": "привет"}])
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 404, 422])
+def test_client_errors_stay_permanent(monkeypatch, status):
+    from budget_agent import ProviderUnavailable, _raw_completion
+    from openai import APIStatusError
+    monkeypatch.setattr("budget_agent.llm_client",
+                        lambda: _client_raising(_status_error(status)))
+    with pytest.raises(APIStatusError) as caught:
+        _raw_completion([{"role": "user", "content": "привет"}])
+    assert not isinstance(caught.value, ProviderUnavailable)
+
+
+def test_x_should_retry_header_wins_over_status(monkeypatch):
+    """Заголовок сервиса главнее нашей таблицы статусов — так же, как у SDK:
+    он вправе сказать «этот 400 стоит повторить» и «этот 429 повторять нечего».
+    """
+    from budget_agent import ProviderUnavailable, _raw_completion
+    from openai import APIStatusError
+
+    monkeypatch.setattr("budget_agent.llm_client",
+                        lambda: _client_raising(_status_error(400, {"x-should-retry": "true"})))
+    with pytest.raises(ProviderUnavailable):
+        _raw_completion([{"role": "user", "content": "привет"}])
+
+    monkeypatch.setattr("budget_agent.llm_client",
+                        lambda: _client_raising(_status_error(429, {"x-should-retry": "false"})))
+    with pytest.raises(APIStatusError) as caught:
+        _raw_completion([{"role": "user", "content": "привет"}])
+    assert not isinstance(caught.value, ProviderUnavailable)
