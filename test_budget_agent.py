@@ -3528,3 +3528,27 @@ def test_x_should_retry_header_wins_over_status(monkeypatch):
     with pytest.raises(APIStatusError) as caught:
         _raw_completion([{"role": "user", "content": "привет"}])
     assert not isinstance(caught.value, ProviderUnavailable)
+
+
+@pytest.mark.parametrize("header,transient", [
+    ("5", True),            # сервер просит подождать чуть-чуть — повторим
+    ("300", False),         # просит ждать пять минут — немедленный повтор ему во вред
+    ("soon", True),         # мусор в заголовке не должен менять решение по статусу
+])
+def test_retry_after_is_respected(monkeypatch, header, transient):
+    """Слишком долгое ожидание отменяет повтор.
+
+    Замечание ревью: SDK при большом Retry-After отказывается от повтора, а наш
+    слой заголовок не читал и мог сходить к перегруженному провайдеру ещё раз
+    сразу же — ровно тогда, когда он и просил не приходить.
+    """
+    from openai import APIStatusError
+    from budget_agent import ProviderUnavailable, _raw_completion
+
+    monkeypatch.setattr("budget_agent.llm_client",
+                        lambda: _client_raising(_status_error(429, {"Retry-After": header})))
+    expected = ProviderUnavailable if transient else APIStatusError
+    with pytest.raises(expected) as caught:
+        _raw_completion([{"role": "user", "content": "привет"}])
+    if not transient:
+        assert not isinstance(caught.value, ProviderUnavailable)

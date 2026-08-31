@@ -223,16 +223,47 @@ def _model_name() -> str:
 # лечит, а перевод в «провайдер временно недоступен» прячет причину от того,
 # кто может её починить.
 _RETRYABLE_STATUSES = (408, 409, 429)
+# Дольше этого ждать бессмысленно: повторять сразу — приходить к перегруженному
+# сервису ровно тогда, когда он просил не приходить, а держать процесс в
+# ожидании минутами — хуже честного отказа. SDK на этом месте отказывается от
+# повтора при своём пороге в две минуты; наш порог свой и меньше, потому что
+# наверху ждёт человек в чате.
+_MAX_RETRY_AFTER_SECONDS = 60.0
+
+def _retry_after_seconds(response) -> float | None:
+    """Retry-After в секундах: заголовок бывает числом и датой. Непонятное
+    значение — это отсутствие указания, а не запрет: решение тогда принимается
+    по статусу."""
+    raw = (response.headers.get("retry-after") or "").strip() if response is not None else ""
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        pass
+    try:
+        from email.utils import parsedate_to_datetime
+        when = parsedate_to_datetime(raw)
+    except (TypeError, ValueError):
+        return None
+    if when is None:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=_dt.timezone.utc)
+    return (when - _dt.datetime.now(_dt.timezone.utc)).total_seconds()
 
 def _is_transient_status(err: APIStatusError) -> bool:
     response = getattr(err, "response", None)
     header = ""
     if response is not None:
         header = (response.headers.get("x-should-retry") or "").strip().lower()
-    if header == "true":
-        return True
     if header == "false":
         return False
+    wait = _retry_after_seconds(response)
+    if wait is not None and math.isfinite(wait) and wait > _MAX_RETRY_AFTER_SECONDS:
+        return False
+    if header == "true":
+        return True
     status = getattr(err, "status_code", None) or 0
     return status in _RETRYABLE_STATUSES or status >= 500
 
