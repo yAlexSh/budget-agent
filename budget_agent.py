@@ -7,6 +7,7 @@ import os
 import re
 import select
 import shlex
+import time
 import shutil
 import subprocess
 import sys
@@ -167,12 +168,25 @@ class StructuredFailure(RuntimeError):
 class ProviderUnavailable(StructuredFailure):
     """Модель не ответила по причине транспорта: обрыв, таймаут, 429, 5xx.
 
-    Наследник StructuredFailure намеренно: у вызывающих уже есть политика на
-    «модель не смогла ответить» — шаг цикла продолжается, финализация отдаёт
-    собранное, классификатор трактует сообщение как не-операцию. Отдельный
-    голый тип исключения потребовал бы повторить эту политику в каждом месте
+    Наследник StructuredFailure намеренно: у классификатора и пробы режима
+    уже есть политика на «модель не смогла ответить» (сообщение — не
+    операция; режим не кэшируется). Но цикл шагов эту дверь НЕ использует:
+    отказ провайдера — не «модель выбрала неудачный шаг», после него нечего
+    продолжать, и run_agent поднимает исключение наружу (см. там). Замер
+    2026-09-01 на фальшивом провайдере с постоянным 429: до этого правила
+    один вопрос стоил 60 HTTP-запросов и 43 секунды ожидания, после чего
+    человек получал поддельный «ответ» с кодом выхода 0.
+
+    retry_after — Retry-After провайдера в секундах, если он его прислал:
+    structured_call выдерживает его перед единственным повтором.
+
+    Отдельный голый тип исключения потребовал бы повторить эту политику в каждом месте
     вызова и разъехался бы с ней при первой же правке (внешнее ревью,
     второй круг: 429 от Ollama уходил мимо защиты классификатора)."""
+    def __init__(self, message: str, retry_after: "float | None" = None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
 
 _FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.S)
 
@@ -204,9 +218,13 @@ def llm_client() -> OpenAI:
     if _client is None:
         s = SETTINGS
         if s.provider == "ollama":
-            _client = OpenAI(base_url=f"{s.ollama_url}/v1", api_key="ollama")
+            # max_retries=0: политика повтора живёт в одном слое — в
+            # structured_call. У SDK по умолчанию три попытки с задержкой; вместе
+            # с нашим повтором и циклом шагов это перемножалось в 60 запросов на
+            # один вопрос при исчерпанной квоте (замер 2026-09-01).
+            _client = OpenAI(base_url=f"{s.ollama_url}/v1", api_key="ollama", max_retries=0)
         else:
-            _client = OpenAI(base_url=s.router_url, api_key=s.router_key)
+            _client = OpenAI(base_url=s.router_url, api_key=s.router_key, max_retries=0)
     return _client
 
 def _model_name() -> str:
@@ -306,8 +324,11 @@ def _raw_completion(messages, response_format=None, max_tokens=1200):
         if _is_transient_status(e):
             # Временный сбой приходит вызывающим той же дверью, что и неудачный
             # разбор: политика «модель не смогла ответить» у них уже есть, а на
-            # голое исключение провайдера — нет.
-            raise ProviderUnavailable(f"{type(e).__name__}: {e}") from e
+            # голое исключение провайдера — нет. Retry-After едет с ним: перед
+            # единственным повтором его выдерживает structured_call.
+            raise ProviderUnavailable(f"{type(e).__name__}: {e}",
+                                      retry_after=_retry_after_seconds(
+                                          getattr(e, "response", None))) from e
         raise
     return resp.choices[0].message.content or ""
 
@@ -315,6 +336,13 @@ def _schema_prompt(schema: type[BaseModel]) -> str:
     js = json.dumps(schema.model_json_schema(), ensure_ascii=False, indent=2)
     return ("Ответь строго одним объектом json по схеме ниже. "
             "Только json, без пояснений и без markdown-обёртки.\n\n" + js)
+
+# Пауза перед единственным повтором при временном сбое, если провайдер не
+# назвал свою (Retry-After). Секунда — компромисс между «дать перегруженному
+# провайдеру выдохнуть» и «наверху ждёт человек в чате». _sleep вынесен в
+# атрибут модуля, чтобы тесты подменяли его, а не ждали по-настоящему.
+_RETRY_BACKOFF_SECONDS = 1.0
+_sleep = time.sleep
 
 def structured_call(schema, messages, mode=None, max_tokens=1200):
     mode = mode or SETTINGS.structured_mode
@@ -338,10 +366,14 @@ def structured_call(schema, messages, mode=None, max_tokens=1200):
         except ProviderUnavailable as e:
             # Транспортный сбой лечится повтором чаще, чем разбор: 429 и обрыв
             # часто проходят со второй попытки. Дополнять переписку объяснением
-            # смысла нет — модель его не получала.
+            # смысла нет — модель его не получала. Повтор ровно один и с паузой
+            # (Retry-After провайдера или своя): SDK-повторы выключены
+            # (max_retries=0), это единственный слой, где они есть.
             last_error = e
             if attempt == 2:
                 raise
+            wait = e.retry_after if e.retry_after and e.retry_after > 0 else _RETRY_BACKOFF_SECONDS
+            _sleep(min(wait, _MAX_RETRY_AFTER_SECONDS))
         except (StructuredFailure, ValidationError) as e:
             last_error = e
             if attempt == 2:
@@ -1896,6 +1928,12 @@ def run_agent(question: str, ctx: Ctx, on_step: "callable | None" = None,
                 {"role": "user", "content": _step_prompt(question, history)}]
         try:
             step = structured_call(NextStep, msgs)
+        except ProviderUnavailable:
+            # Провайдер не отвечает — продолжать нечего: следующие семь шагов и
+            # финализация упёрлись бы в тот же отказ (замер: 60 запросов, 43 с,
+            # поддельный ответ). Наружу, где handle_request запишет error, а
+            # Telegram/CLI скажут человеку, что модель недоступна.
+            raise
         except StructuredFailure as e:
             history.append({"error": str(e)})
             continue                    # контролируемый отказ шага, не падение агента
@@ -1928,6 +1966,8 @@ def run_agent(question: str, ctx: Ctx, on_step: "callable | None" = None,
         final = structured_call(FinalAnswer, [
             {"role": "system", "content": system},
             {"role": "user", "content": _final_prompt(question, history, sorted(registry))}])
+    except ProviderUnavailable:
+        raise                            # см. ветку шага выше: отказ провайдера — наружу
     except StructuredFailure:
         # Контролируемый отказ финализации — тот же принцип, что и на шаге:
         # честный ответ о том, что не получилось, с тем, что успели собрать,
@@ -2295,6 +2335,9 @@ _tg_logger = logging.getLogger("budget_agent.telegram")
 # не в код). Общая формулировка в чат, полная трассировка — в лог процесса
 # через _tg_logger.exception (см. _on_text/_on_advice).
 _ON_TEXT_ERROR_MSG = "Не получилось обработать сообщение, попробуйте ещё раз."
+_PROVIDER_DOWN_MSG = ("Языковая модель сейчас недоступна. Команды /status, /report и "
+                      "/balance работают без неё; на вопрос отвечу, когда она вернётся — "
+                      "попробуйте через минуту.")
 _ON_ADVICE_ERROR_MSG = "Не получилось подготовить совет, попробуйте ещё раз."
 _UNAUTHORIZED_MSG = "Этот бот доступен только настроенным пользователям и разрешённым чатам."
 
@@ -2909,6 +2952,11 @@ async def _on_text(update, context) -> None:
     try:
         result = await _run_with_broadcast(
             context.bot, ctx, lambda on_step: handle_request(text, ctx, on_step))
+    except ProviderUnavailable as e:
+        # Ожидаемый отказ, не аварийный: без стека, с конкретным ответом человеку.
+        _tg_logger.warning("модель недоступна (chat_id=%s): %s", ctx.chat_id, e)
+        await _reply(context.bot, ctx.chat_id, _PROVIDER_DOWN_MSG)
+        return
     except Exception:
         _tg_logger.exception("необработанное исключение в _on_text (chat_id=%s)", ctx.chat_id)
         await _reply(context.bot, ctx.chat_id, _ON_TEXT_ERROR_MSG)
@@ -2947,6 +2995,10 @@ async def _on_advice(update, context) -> None:
         return _journaled(ctx, ADVICE_QUESTION, "callback", sgr)
     try:
         result = await _run_with_broadcast(context.bot, ctx, call)
+    except ProviderUnavailable as e:
+        _tg_logger.warning("модель недоступна на кнопке (chat_id=%s): %s", ctx.chat_id, e)
+        await _reply(context.bot, ctx.chat_id, _PROVIDER_DOWN_MSG)
+        return
     except Exception:
         _tg_logger.exception("необработанное исключение в _on_advice (chat_id=%s)", ctx.chat_id)
         await _reply(context.bot, ctx.chat_id, _ON_ADVICE_ERROR_MSG)
