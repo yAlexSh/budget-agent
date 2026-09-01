@@ -3461,7 +3461,10 @@ def test_bad_reasoning_effort_stops_startup(monkeypatch, value):
     from budget_agent import load_settings
     monkeypatch.setenv("LLM_REASONING_EFFORT", value)
     if value == "":
-        pytest.skip("пустая строка означает «не задано» и берёт умолчание")
+        # Пустая строка — «не задано»: берётся умолчание. Это утверждение, а не
+        # пропуск: пропуск ничего не проверял бы (ревью 2026-09-01).
+        assert load_settings().reasoning_effort == "low"
+        return
     with pytest.raises(SystemExit):
         load_settings()
 
@@ -3552,3 +3555,125 @@ def test_retry_after_is_respected(monkeypatch, header, transient):
         _raw_completion([{"role": "user", "content": "привет"}])
     if not transient:
         assert not isinstance(caught.value, ProviderUnavailable)
+
+
+
+# ===== Усиление повторов при длительном отказе провайдера (2026-09-01) =====
+#
+# Повтор существовал в трёх слоях сразу — SDK (3 попытки с задержкой),
+# structured_call (×2), цикл шагов (×8 + финализация) — и под исчерпанной
+# квотой (429 на каждый запрос, «временный» по статусу) они перемножались.
+# Замер на фальшивом провайдере: 60 HTTP-запросов, 43 секунды, поддельный
+# «ответ» с кодом выхода 0. Теперь: SDK без повторов, один повтор с паузой
+# в structured_call, цикл шагов при отказе провайдера останавливается и
+# поднимает исключение — четыре запроса на вопрос, честная ошибка.
+
+import httpx as _httpx
+from openai import RateLimitError as _RateLimitError
+from budget_agent import ProviderUnavailable as _PU, _PROVIDER_DOWN_MSG
+
+
+def _rate_limited(retry_after=None):
+    headers = {"Retry-After": str(retry_after)} if retry_after is not None else {}
+    resp = _httpx.Response(429, headers=headers, request=_httpx.Request("POST", "http://x/v1"))
+    return _RateLimitError("quota (fake)", response=resp, body=None)
+
+
+class _Always429:
+    """Клиент, который всегда отвечает 429 и считает обращения."""
+    def __init__(self, retry_after=None):
+        self.calls = 0; self.retry_after = retry_after
+        outer = self
+        class _C:
+            def create(self, **kw):
+                outer.calls += 1
+                raise _rate_limited(outer.retry_after)
+        self.chat = type("chat", (), {"completions": _C()})()
+
+
+def test_llm_client_owns_retry_policy(monkeypatch):
+    """SDK-повторы выключены: единственный слой повтора — structured_call."""
+    import budget_agent
+    monkeypatch.setattr("budget_agent._client", None)
+    assert budget_agent.llm_client().max_retries == 0
+
+
+def test_structured_call_retries_once_and_honours_retry_after(monkeypatch):
+    client = _Always429(retry_after=2)
+    slept = []
+    monkeypatch.setattr("budget_agent.llm_client", lambda: client)
+    monkeypatch.setattr("budget_agent._sleep", lambda sec: slept.append(sec))
+    with pytest.raises(_PU) as e:
+        structured_call(NextStep, [{"role": "user", "content": "привет"}], mode="prompt")
+    assert client.calls == 2, "ровно один повтор"
+    assert slept == [2.0], "пауза — Retry-After провайдера"
+    assert e.value.retry_after == 2.0
+
+
+def test_structured_call_default_backoff_without_retry_after(monkeypatch):
+    client = _Always429()
+    slept = []
+    monkeypatch.setattr("budget_agent.llm_client", lambda: client)
+    monkeypatch.setattr("budget_agent._sleep", lambda sec: slept.append(sec))
+    with pytest.raises(_PU):
+        structured_call(NextStep, [{"role": "user", "content": "привет"}], mode="prompt")
+    assert slept == [1.0]
+
+
+def test_run_agent_stops_at_first_provider_outage(monkeypatch):
+    calls = []
+    def boom(*a, **k):
+        calls.append(1); raise _PU("429 (fake)")
+    monkeypatch.setattr("budget_agent.structured_call", boom)
+    with pytest.raises(_PU):
+        run_agent("сколько мы потратили?", PRIV_H)
+    assert len(calls) == 1, "ни следующих шагов, ни финализации — провайдер лежит"
+
+
+def test_sustained_429_costs_four_requests_not_sixty(monkeypatch):
+    """Сквозной: классификатор (2) + первый шаг (2) = 4 запроса, дальше —
+    честная ошибка и строка error в журнале. До правки — 60."""
+    client = _Always429()
+    monkeypatch.setattr("budget_agent.llm_client", lambda: client)
+    monkeypatch.setattr("budget_agent._sleep", lambda sec: None)
+    monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(structured_mode="json_object"))
+    marker = "журнал-тест: провайдер лежит целиком"
+    with pytest.raises(_PU):
+        handle_request(marker, PRIV_H)
+    assert client.calls == 4, client.calls
+    _, status, answer, _, err, *_ = _journal_rows(marker)[-1]
+    assert status == "error" and answer is None and "RateLimitError" in err
+
+
+def test_on_text_provider_down_tells_the_user_specifically(monkeypatch):
+    monkeypatch.setattr("budget_agent.SETTINGS", _settings_with_persons(broadcast_steps=False))
+    monkeypatch.setattr("budget_agent.parse_transaction", lambda *a, **k: None)
+    def boom(*a, **k):
+        raise _PU("429 (fake)")
+    monkeypatch.setattr("budget_agent.run_agent", boom)
+    update, context = _FakeUpdate("сколько у нас денег"), _FakeContext()
+    asyncio.run(_on_text(update, context))
+    assert [m["text"] for m in context.bot.sent] == [_PROVIDER_DOWN_MSG]
+
+
+def test_single_transient_429_is_healed_by_the_one_retry(monkeypatch):
+    """Проверка «не навредило»: короткий сбой (один 429, затем ответ) повтор
+    обязан спасти — ровно ради этого единственный повтор и оставлен."""
+    state = {"calls": 0}
+    class _Flaky:
+        class chat:
+            class completions:
+                @staticmethod
+                def create(**kw):
+                    state["calls"] += 1
+                    if state["calls"] == 1:
+                        raise _rate_limited(retry_after=1)
+                    msg = type("m", (), {"content": '{"kind": "expense", "amount": 3200, '
+                                                    '"counterparty": "ВкусВилл", "currency": "RUB"}'})()
+                    return type("r", (), {"choices": [type("c", (), {"message": msg})()]})()
+    monkeypatch.setattr("budget_agent.llm_client", lambda: _Flaky())
+    slept = []
+    monkeypatch.setattr("budget_agent._sleep", lambda sec: slept.append(sec))
+    out = structured_call(ParsedTransaction, [{"role": "user", "content": "привет"}], mode="prompt")
+    assert out.kind == "expense" and out.amount == 3200
+    assert state["calls"] == 2 and slept == [1.0]
